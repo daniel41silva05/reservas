@@ -33,14 +33,14 @@ export async function renderEmpresas(container, session) {
                             <input type="text" id="empresaNome" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label>Tipo (Opcional)</label>
+                            <label>Tipo</label>
                             <input type="text" id="empresaTipo" class="form-control" placeholder="ex: Turismo, Tattoo...">
                         </div>
                     </div>
                     ${isAdmin ? `
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label>Atribuir a Dono (ID do Auth User) - Apenas Admin</label>
-                            <input type="text" id="empresaDonoId" class="form-control" value="${session.user.id}">
+                            <label>Atribuir a Dono (ID do Auth User)</label>
+                            <input type="text" id="empresaDonoId" class="form-control" value="">
                         </div>
                     ` : `<input type="hidden" id="empresaDonoId" value="${session.user.id}">`}
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
@@ -57,7 +57,6 @@ export async function renderEmpresas(container, session) {
                         <tr>
                             <th>Nome</th>
                             <th>Tipo</th>
-                            <th>ID da Empresa</th>
                             ${isAdmin ? '<th>Dono ID</th>' : ''}
                             <th style="text-align: right;">Ações</th>
                         </tr>
@@ -70,18 +69,19 @@ export async function renderEmpresas(container, session) {
             html += `
                 <tr>
                     <td><strong>${escapeHTML(emp.nome)}</strong></td>
-                    <td>${emp.tipo ? `<span class="badge badge-success">${escapeHTML(emp.tipo)}</span>` : '<span style="color: gray; font-size: 0.8rem;">Não definido</span>'}</td>
-                    <td style="font-size: 0.8rem; color: gray;">${emp.id}</td>
+                    <td>${emp.tipo ? `<span class="badge badge-primary">${escapeHTML(emp.tipo)}</span>` : '<span style="color: gray; font-size: 0.8rem;">Não definido</span>'}</td>
                     ${isAdmin ? `<td style="font-size: 0.75rem; color: gray;">${emp.dono_id}</td>` : ''}
-                    <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-empresa" data-id="${emp.id}" data-nome="${escapeHTML(emp.nome)}" data-tipo="${escapeHTML(emp.tipo || '')}" data-dono="${emp.dono_id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-secondary btn-delete-empresa" data-id="${emp.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                            <button class="btn btn-secondary btn-edit-empresa" data-id="${emp.id}" data-nome="${escapeHTML(emp.nome)}" data-tipo="${escapeHTML(emp.tipo || '')}" data-dono="${emp.dono_id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-secondary btn-delete-empresa" data-id="${emp.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </td>
                 </tr>
             `;
         });
     } else {
-        html += `<tr><td colspan="${isAdmin ? '5' : '4'}">Nenhuma empresa registada.</td></tr>`;
+        html += `<tr><td colspan="${isAdmin ? '4' : '3'}">Nenhuma empresa registada.</td></tr>`;
     }
 
     html += `</tbody></table></div></div>`;
@@ -102,7 +102,7 @@ function setupEmpresasListeners(session, isAdmin) {
     btnNova.addEventListener('click', () => {
         form.reset();
         document.getElementById('empresaId').value = '';
-        if (isAdmin) document.getElementById('empresaDonoId').value = session.user.id;
+        if (isAdmin) document.getElementById('empresaDonoId').value = '';
         document.getElementById('empresaMsg').style.display = 'none';
         title.textContent = 'Adicionar nova empresa';
         formContainer.classList.toggle('hidden');

@@ -66,29 +66,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.dashboardContext.currentEmpresaTipo = currExists.tipo;
                 }
 
-                let selectHTML = `<select id="globalEmpresaSelect" class="form-control" style="padding: 0.4rem 1rem; border-radius: 99px; background: rgba(0,0,0,0.4); font-size: 0.85rem; max-width: 200px;">`;
+                // Custom Dropdown UI
+                let optionsHTML = '';
                 window.dashboardContext.empresas.forEach(emp => {
-                    let selected = emp.id == window.dashboardContext.currentEmpresaId ? 'selected' : '';
-                    selectHTML += `<option value="${emp.id}" ${selected}>${emp.nome}</option>`;
+                    let isActive = emp.id == window.dashboardContext.currentEmpresaId ? 'active' : '';
+                    optionsHTML += `<div class="custom-option ${isActive}" data-value="${emp.id}">${escapeHTML(emp.nome)}</div>`;
                 });
-                selectHTML += `</select>`;
 
-                contextWrapper.innerHTML = selectHTML;
+                let customSelectHTML = `
+                <div class="custom-dropdown" id="adminCompanyDropdown">
+                    <div class="custom-dropdown-selected" tabindex="0">
+                        <i class="fa-solid fa-building icon-left"></i>
+                        <span class="selected-text">${escapeHTML(window.dashboardContext.currentEmpresaName)}</span>
+                        <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                    </div>
+                    <div class="custom-dropdown-menu">
+                        ${optionsHTML}
+                    </div>
+                </div>`;
+
+                contextWrapper.innerHTML = customSelectHTML;
                 contextWrapper.classList.remove('hidden');
 
-                document.getElementById('globalEmpresaSelect').addEventListener('change', (e) => {
-                    window.dashboardContext.currentEmpresaId = e.target.value;
-                    const emp = window.dashboardContext.empresas.find(x => x.id == e.target.value);
-                    window.dashboardContext.currentEmpresaName = emp ? emp.nome : null;
-                    window.dashboardContext.currentEmpresaTipo = emp ? emp.tipo : null;
+                const dropdown = document.getElementById('adminCompanyDropdown');
+                const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+                const optionsList = dropdown.querySelectorAll('.custom-option');
+                const textEl = dropdown.querySelector('.selected-text');
 
-                    updateUIBasedOnTipo();
+                selectedEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('open');
+                });
 
-                    // Recarregar a view actual
-                    const activeNav = document.querySelector('#navLinks li.active');
-                    if (activeNav) {
-                        loadView(activeNav.getAttribute('data-view'), session);
-                    }
+                document.addEventListener('click', () => {
+                    dropdown.classList.remove('open');
+                });
+
+                optionsList.forEach(opt => {
+                    opt.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        optionsList.forEach(o => o.classList.remove('active'));
+                        opt.classList.add('active');
+                        textEl.textContent = opt.textContent;
+                        dropdown.classList.remove('open');
+
+                        const val = opt.getAttribute('data-value');
+                        if (val != window.dashboardContext.currentEmpresaId) {
+                            window.dashboardContext.currentEmpresaId = val;
+                            const emp = window.dashboardContext.empresas.find(x => x.id == val);
+                            window.dashboardContext.currentEmpresaName = emp ? emp.nome : null;
+                            window.dashboardContext.currentEmpresaTipo = emp ? emp.tipo : null;
+
+                            updateUIBasedOnTipo();
+
+                            const activeNav = document.querySelector('#navLinks li.active');
+                            if (activeNav) {
+                                loadView(activeNav.getAttribute('data-view'), session);
+                            }
+                        }
+                    });
                 });
             } else {
                 contextWrapper.innerHTML = '';
@@ -106,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.dashboardContext.currentEmpresaName = window.dashboardContext.empresas[0].nome;
                 window.dashboardContext.currentEmpresaTipo = window.dashboardContext.empresas[0].tipo;
 
-                contextWrapper.innerHTML = `<span class="badge badge-success" style="font-size: 0.85rem;"><i class="fa-solid fa-building"></i> ${escapeHTML(window.dashboardContext.currentEmpresaName)}</span>`;
+                contextWrapper.innerHTML = `<span class="badge badge-primary" style="font-size: 0.85rem;"><i class="fa-solid fa-building"></i> ${escapeHTML(window.dashboardContext.currentEmpresaName)}</span>`;
                 contextWrapper.classList.remove('hidden');
             } else {
                 contextWrapper.innerHTML = '';

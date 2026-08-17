@@ -24,7 +24,7 @@ export async function renderRecursos(container, session) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
                     <h3>Lista de Recursos</h3>
-                    <p class="text-sub" style="font-size: 0.85rem;">Por exemplo: "Quarto duplo", "Cadeira 1", "Tatuador X".</p>
+                    <p class="text-sub" style="font-size: 0.85rem;">Adicione os itens, espaços ou profissionais que estarão disponíveis para reserva.</p>
                 </div>
                 <button class="btn btn-primary" id="btnNovoRecurso" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Novo Recurso</button>
             </div>
@@ -35,16 +35,19 @@ export async function renderRecursos(container, session) {
                 <form id="formRecurso">
                     <input type="hidden" id="recursoId" value="">
                     
-                    <div style="margin-bottom: 1rem;">
-                        <div class="form-group">
+                    <div style="display: flex; gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px; margin: 0; display: flex; flex-direction: column;">
                             <label>Nome do Recurso</label>
-                            <input type="text" id="recursoNome" class="form-control" required placeholder="Quarto 101">
+                            <input type="text" id="recursoNome" class="form-control" required placeholder="Nome do recurso..." style="flex: 1; box-sizing: border-box;">
                         </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="recursoAtivo" checked>
-                        <label for="recursoAtivo" style="margin: 0;">Recurso Ativo (Disponível para reserva)</label>
+                        
+                        <div class="form-group" style="margin: 0; min-width: 200px; display: flex; flex-direction: column;">
+                            <label style="visibility: hidden;">Estado</label>
+                            <label for="recursoAtivo" class="form-control" style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; margin: 0; padding: 0.9rem 1.2rem; box-sizing: border-box; flex: 1;">
+                                <input type="checkbox" id="recursoAtivo" checked style="margin: 0; width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: var(--primary-color);">
+                                <span style="font-weight: 500; font-size: 1rem; white-space: nowrap; margin-bottom: 0;">Ativo (Disponível)</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
