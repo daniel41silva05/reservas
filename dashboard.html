@@ -17,30 +17,35 @@
 </head>
 
 <body>
+    <!-- Background Glow Effects -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <aside class="sidebar glass-panel">
             <div class="sidebar-header">
-                <h2>Reservas<span>.</span></h2>
+                <h2><span>Sistema</span> Reservas<span>.</span></h2>
             </div>
 
             <nav class="sidebar-nav">
                 <ul id="navLinks">
-                    <li id="navEmpresas" class="hidden" data-view="empresas"><i class="fa-solid fa-building"></i>
-                        Empresas</li>
-                    <li data-view="recursos"><i class="fa-solid fa-cubes"></i> Recursos</li>
-                    <li data-view="precos"><i class="fa-solid fa-tags"></i> Preços</li>
-                    <li data-view="bloqueios"><i class="fa-solid fa-calendar-xmark"></i> Bloqueios</li>
-                    <li data-view="reservas"><i class="fa-solid fa-list"></i> Ver Reservas</li>
-                    <li data-view="nova_reserva"><i class="fa-solid fa-calendar-plus"></i> Nova Reserva</li>
+                    <li id="navEmpresas" class="hidden" data-view="empresas"><i
+                            class="fa-solid fa-building fa-fw"></i><span>Empresas</span></li>
+                    <li data-view="recursos"><i class="fa-solid fa-cubes fa-fw"></i><span>Recursos</span></li>
+                    <li data-view="precos"><i class="fa-solid fa-tag fa-fw"></i><span>Preços</span></li>
+                    <li data-view="bloqueios"><i class="fa-solid fa-calendar-xmark fa-fw"></i><span>Bloqueios</span>
+                    </li>
+                    <li data-view="reservas"><i class="fa-solid fa-list fa-fw"></i><span>Ver Reservas</span></li>
+                    <li data-view="nova_reserva"><i class="fa-solid fa-calendar-plus fa-fw"></i><span>Nova
+                            Reserva</span></li>
                 </ul>
             </nav>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="topbar glass-panel-soft">
-                <h2 id="viewTitle">A carregar...</h2>
+            <header class="topbar">
                 <div class="topbar-right">
                     <div id="companyContextWrapper" class="company-context hidden">
                         <!-- Selector for Admin, Text for owner -->

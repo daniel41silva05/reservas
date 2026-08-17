@@ -3,15 +3,22 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Login | Sistema Central de Reservas</title>
     <link rel="stylesheet" href="./css/style.css">
+
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body>
+<body class="login-body">
+    <!-- Background Glow Effects -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
     <div class="auth-wrapper">
         <div class="auth-card glass-panel" id="loginFormContainer">
             <div class="auth-header">
@@ -26,7 +33,13 @@
                 </div>
                 <div class="form-group">
                     <label for="password">Palavra-passe</label>
-                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                        <button type="button" id="togglePassword" class="password-toggle-btn"
+                            aria-label="Ver palavra-passe">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <p id="errorMsg" class="error-msg"></p>
@@ -34,40 +47,11 @@
                 <button type="submit" class="btn btn-primary w-full mt-2" id="loginBtn">Entrar no painel</button>
             </form>
 
-            <div class="text-center mt-4">
-                <p class="text-sub">Ainda não tem conta? <button type="button" class="btn btn-secondary mt-1"
-                        id="showRegisterBtn" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Adira ao
-                        sistema</button></p>
-            </div>
-        </div>
-
-        <div class="auth-card glass-panel hidden" id="registerFormContainer">
-            <div class="auth-header">
-                <h1>Nova Conta</h1>
-                <p class="text-sub">Gira as reservas do seu negócio</p>
-            </div>
-
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="regEmail">E-mail</label>
-                    <input type="email" id="regEmail" class="form-control" placeholder="nome@empresa.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="regPassword">Palavra-passe</label>
-                    <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required>
-                </div>
-
-                <p id="regErrorMsg" class="error-msg"></p>
-                <p id="regSuccessMsg"
-                    style="color: var(--success); font-size: 0.85rem; margin-top: 0.5rem; display: none;">Conta criada!
-                    Confirme o seu email (se ativado no Supabase).</p>
-
-                <button type="submit" class="btn btn-primary w-full mt-2" id="registerBtn">Registar Negócio</button>
-            </form>
-
-            <div class="text-center mt-4">
-                <p class="text-sub">Já tem conta? <button type="button" class="btn btn-secondary mt-1" id="showLoginBtn"
-                        style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Voltar ao Login</button></p>
+            <div class="text-center mt-3">
+                <p class="text-sub" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    Ainda não tem conta? <a href="https://wa.me/351934091814" target="_blank" class="btn btn-secondary"
+                        style="font-size: 0.85rem; padding: 0.4rem 1rem; text-decoration: none;">Adira ao sistema</a>
+                </p>
             </div>
         </div>
     </div>

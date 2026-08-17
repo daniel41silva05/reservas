@@ -2,22 +2,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Referências aos elementos
     const loginFormContainer = document.getElementById('loginFormContainer');
-    const registerFormContainer = document.getElementById('registerFormContainer');
     const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const showRegisterBtn = document.getElementById('showRegisterBtn');
-    const showLoginBtn = document.getElementById('showLoginBtn');
 
-    // Alternar vistas
-    showRegisterBtn.addEventListener('click', () => {
-        loginFormContainer.classList.add('hidden');
-        registerFormContainer.classList.remove('hidden');
-    });
-
-    showLoginBtn.addEventListener('click', () => {
-        registerFormContainer.classList.add('hidden');
-        loginFormContainer.classList.remove('hidden');
-    });
 
     // Validar se já existe sessão, se sim, redirecionar para o dashboard
     if (window.supabase) {
@@ -25,6 +11,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (session) {
             window.location.href = 'dashboard.html';
         }
+    }
+
+    // Toggle Password Visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle view icon
+            const icon = togglePassword.querySelector('i');
+            if (type === 'text') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
     }
 
     // Login Handler
@@ -61,43 +68,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Sucesso
             window.location.href = 'dashboard.html';
         }
-    });
-
-    // Register Handler
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const errorMsg = document.getElementById('regErrorMsg');
-        const successMsg = document.getElementById('regSuccessMsg');
-        const regBtn = document.getElementById('registerBtn');
-
-        errorMsg.style.display = 'none';
-        successMsg.style.display = 'none';
-        regBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A registar...';
-        regBtn.disabled = true;
-
-        if (!window.supabase) {
-            errorMsg.textContent = "Supabase não está configurado.";
-            errorMsg.style.display = 'block';
-            regBtn.innerHTML = 'Registar Negócio';
-            regBtn.disabled = false;
-            return;
-        }
-
-        const { data, error } = await window.supabase.auth.signUp({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            errorMsg.textContent = "Erro: " + error.message;
-            errorMsg.style.display = 'block';
-        } else {
-            successMsg.style.display = 'block';
-        }
-
-        regBtn.innerHTML = 'Registar Negócio';
-        regBtn.disabled = false;
     });
 });

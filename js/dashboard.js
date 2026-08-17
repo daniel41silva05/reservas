@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (navPrecos) {
             if (tipo === 'hotel') {
                 navPrecos.classList.remove('hidden-by-type');
-                navPrecos.style.display = 'block';
+                navPrecos.style.display = 'flex';
             } else {
                 navPrecos.classList.add('hidden-by-type');
                 navPrecos.style.display = 'none';
@@ -177,33 +177,26 @@ function escapeHTML(str) {
 // Função de carregamento das Vistas modularizada
 async function loadView(view, session) {
     const contentArea = document.getElementById('contentArea');
-    const viewTitle = document.getElementById('viewTitle');
 
     contentArea.innerHTML = '<div class="glass-panel" style="padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> A carregar...</div>';
 
     switch (view) {
         case 'empresas':
-            viewTitle.textContent = "Gestão de Empresas";
             await renderEmpresas(contentArea, session);
             break;
         case 'recursos':
-            viewTitle.textContent = "Gestão de Recursos";
             await renderRecursos(contentArea, session);
             break;
         case 'precos':
-            viewTitle.textContent = "Configurar Preços";
             await renderPrecos(contentArea, session);
             break;
         case 'bloqueios':
-            viewTitle.textContent = "Bloqueios Calendário";
             await renderBloqueios(contentArea, session);
             break;
         case 'reservas':
-            viewTitle.textContent = "Marcações e Reservas";
             await renderReservas(contentArea, session);
             break;
         case 'nova_reserva':
-            viewTitle.textContent = "Nova Reserva";
             // We can delegate this to a module if we extract it, or render inline
             import('./views/nova_reserva_widget.js').then(module => {
                 module.renderNovaReservaWidget(contentArea, session);
