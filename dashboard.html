@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Sistema Central de Reservas</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- FullCalendar JS CDN -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <h2>Reservas<span>.</span></h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul id="navLinks">
+                    <li id="navEmpresas" class="hidden" data-view="empresas"><i class="fa-solid fa-building"></i>
+                        Empresas</li>
+                    <li data-view="recursos"><i class="fa-solid fa-cubes"></i> Recursos</li>
+                    <li data-view="precos"><i class="fa-solid fa-tags"></i> Preços</li>
+                    <li data-view="bloqueios"><i class="fa-solid fa-calendar-xmark"></i> Bloqueios</li>
+                    <li data-view="reservas"><i class="fa-solid fa-list"></i> Ver Reservas</li>
+                    <li data-view="nova_reserva"><i class="fa-solid fa-calendar-plus"></i> Nova Reserva</li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass-panel-soft">
+                <h2 id="viewTitle">A carregar...</h2>
+                <div class="topbar-right">
+                    <div id="companyContextWrapper" class="company-context hidden">
+                        <!-- Selector for Admin, Text for owner -->
+                    </div>
+
+                    <div class="user-profile">
+                        <span id="userEmail" class="text-sub">Carregando...</span>
+                        <button id="logoutBtn" class="btn-icon btn-logout" title="Sair do sistema"><i
+                                class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area" id="contentArea">
+                <!-- Dynamic Content Loading Area -->
+                <div class="glass-panel" style="padding: 2rem;">
+                    <p class="text-sub">Carregando dados...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="./env.js"></script>
+    <script type="module" src="./js/supabase-config.js"></script>
+    <script type="module" src="./js/dashboard.js"></script>
+</body>
+
+</html>

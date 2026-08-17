@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Sistema Central de Reservas</title>
+    <link rel="stylesheet" href="./css/style.css">
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card glass-panel" id="loginFormContainer">
+            <div class="auth-header">
+                <h1>Painel de Reservas</h1>
+                <p class="text-sub">Faça login para gerir o seu negócio</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" class="form-control" placeholder="nome@empresa.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Palavra-passe</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <p id="errorMsg" class="error-msg"></p>
+
+                <button type="submit" class="btn btn-primary w-full mt-2" id="loginBtn">Entrar no painel</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="text-sub">Ainda não tem conta? <button type="button" class="btn btn-secondary mt-1"
+                        id="showRegisterBtn" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Adira ao
+                        sistema</button></p>
+            </div>
+        </div>
+
+        <div class="auth-card glass-panel hidden" id="registerFormContainer">
+            <div class="auth-header">
+                <h1>Nova Conta</h1>
+                <p class="text-sub">Gira as reservas do seu negócio</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regEmail">E-mail</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="nome@empresa.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Palavra-passe</label>
+                    <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <p id="regErrorMsg" class="error-msg"></p>
+                <p id="regSuccessMsg"
+                    style="color: var(--success); font-size: 0.85rem; margin-top: 0.5rem; display: none;">Conta criada!
+                    Confirme o seu email (se ativado no Supabase).</p>
+
+                <button type="submit" class="btn btn-primary w-full mt-2" id="registerBtn">Registar Negócio</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="text-sub">Já tem conta? <button type="button" class="btn btn-secondary mt-1" id="showLoginBtn"
+                        style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Voltar ao Login</button></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="./env.js"></script>
+    <script type="module" src="./js/supabase-config.js"></script>
+    <script type="module" src="./js/auth.js"></script>
+</body>
+
+</html>

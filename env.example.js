@@ -1,0 +1,4 @@
+window.ENV = {
+    SUPABASE_URL: 'SUA_URL_AQUI',
+    SUPABASE_ANON_KEY: 'SUA_CHAVE_AQUI'
+};
