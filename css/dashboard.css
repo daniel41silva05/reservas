@@ -405,3 +405,148 @@
     background: var(--surface-hover);
     transform: translateY(-2px);
 }
+
+/* Custom Global Confirm Modal Overrides */
+.modal-content {
+    background: var(--surface-color);
+    border: var(--glass-border);
+    padding: 3rem 2.5rem;
+    border-radius: var(--border-radius);
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-icon {
+    font-size: 3.5rem;
+    color: #ef4444;
+    margin-bottom: 2rem;
+    animation: pulseIcon 2s infinite ease-in-out;
+}
+
+@keyframes pulseIcon {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.modal-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text-main);
+}
+
+.modal-message {
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    /* Increased spacing between text and buttons */
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.modal-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    /* Better side-by-side spacing */
+    width: 100%;
+}
+
+.modal-actions button {
+    flex: 1;
+    white-space: nowrap;
+    padding: 0.8rem 1.5rem;
+    font-weight: 500;
+    border-radius: 99px;
+    transition: var(--transition);
+}
+
+/* Global Date Picker Aesthetic Improvements */
+input[type="date"].form-control {
+    color-scheme: dark;
+    background: var(--surface-color) !important;
+    border: var(--glass-border) !important;
+    padding: 0.8rem 1.2rem !important;
+    border-radius: 12px !important;
+    color: var(--text-main) !important;
+    font-size: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    font-family: 'Inter', sans-serif !important;
+    min-height: 52px !important;
+}
+
+input[type="date"].form-control:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    background: var(--surface-hover) !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+    filter: invert(1);
+    transition: var(--transition);
+    padding: 0.2rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Flatpickr Custom Aesthetic Overrides */
+.flatpickr-calendar {
+    background: rgba(26, 34, 53, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+    color: var(--text-main) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.flatpickr-calendar .flatpickr-day {
+    color: var(--text-main) !important;
+    border-radius: 99px !important;
+}
+
+.flatpickr-calendar .flatpickr-day:hover,
+.flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+.flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.flatpickr-calendar .flatpickr-day.selected {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4) !important;
+}

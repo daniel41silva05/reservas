@@ -179,10 +179,11 @@ function setupRecursosListeners() {
     document.querySelectorAll('.btn-delete-recurso').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.getAttribute('data-id');
-            if (confirm('Tem a certeza que deseja eliminar este recurso e TODOS os bloqueios precos e reservas?')) {
+            const confirmado = await window.showConfirmModal('Apagar Recurso', 'Tem a certeza que deseja eliminar este recurso e TODOS os bloqueios, preços e reservas associadas?');
+            if (confirmado) {
                 const { error } = await window.supabase.from('recursos').delete().eq('id', id);
                 if (error) {
-                    alert('Erro a eliminar: ' + error.message);
+                    window.showAlertModal('Erro', 'Erro a eliminar: ' + error.message);
                 } else {
                     setTimeout(() => document.querySelector('[data-view="recursos"]').click(), 0);
                 }

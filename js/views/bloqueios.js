@@ -233,10 +233,11 @@ function setupBloqueiosListeners(meusRecursos) {
     document.querySelectorAll('.btn-delete-bloqueio').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.getAttribute('data-id');
-            if (confirm('Remover este bloqueio e repôr disponibilidade?')) {
+            const confirmado = await window.showConfirmModal('Remover Bloqueio', 'Tem a certeza que deseja remover este bloqueio e repôr a disponibilidade?');
+            if (confirmado) {
                 const { error } = await window.supabase.from('bloqueios_disponibilidade').delete().eq('id', id);
                 if (error) {
-                    alert('Erro a eliminar: ' + error.message);
+                    window.showAlertModal('Erro', 'Erro a eliminar: ' + error.message);
                 } else {
                     setTimeout(() => document.querySelector('[data-view="bloqueios"]').click(), 0);
                 }

@@ -195,6 +195,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('#navLinks li').forEach(l => l.classList.remove('active'));
     document.querySelector(`#navLinks li[data-view="${activeRoute}"]`).classList.add('active');
     loadView(activeRoute, session);
+
+    // Global scroll listener to close flatpickr instances when main content scrolls
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.addEventListener('scroll', () => {
+            const fpInputs = document.querySelectorAll('.flatpickr-input');
+            fpInputs.forEach(input => {
+                if (input._flatpickr && input._flatpickr.isOpen) {
+                    input._flatpickr.close();
+                }
+            });
+        }, { passive: true });
+    }
 });
 
 function escapeHTML(str) {
@@ -242,3 +255,63 @@ async function loadView(view, session) {
             break;
     }
 }
+
+window.showConfirmModal = function (title, message, isAlert = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('globalConfirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const btnAccept = document.getElementById('btnConfirmAccept');
+        const btnCancel = document.getElementById('btnConfirmCancel');
+
+        if (!modal) {
+            if (isAlert) {
+                alert(message);
+                resolve(true);
+            } else {
+                resolve(confirm(message));
+            }
+            return;
+        }
+
+        titleEl.textContent = title || 'Confirmação';
+        messageEl.textContent = message || (isAlert ? '' : 'Tem a certeza que deseja prosseguir?');
+
+        if (isAlert) {
+            btnCancel.style.display = 'none';
+            btnAccept.textContent = 'OK';
+            btnAccept.className = 'btn btn-primary';
+            btnAccept.style = '';
+        } else {
+            btnCancel.style.display = 'block';
+            btnAccept.textContent = 'Apagar';
+            btnAccept.className = 'btn btn-primary';
+            btnAccept.style = 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);';
+        }
+
+        modal.classList.remove('hidden');
+
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            btnAccept.removeEventListener('click', onAccept);
+            btnCancel.removeEventListener('click', onCancel);
+        };
+
+        const onAccept = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        btnAccept.addEventListener('click', onAccept);
+        btnCancel.addEventListener('click', onCancel);
+    });
+};
+
+window.showAlertModal = function (title, message) {
+    return window.showConfirmModal(title, message, true);
+};

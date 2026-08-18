@@ -178,10 +178,11 @@ function setupEmpresasListeners(session, isAdmin) {
     document.querySelectorAll('.btn-delete-empresa').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.getAttribute('data-id');
-            if (confirm('Tem a certeza que deseja eliminar esta empresa e TODOS os recursos e reservas associadas?')) {
+            const confirmado = await window.showConfirmModal('Apagar Empresa', 'Tem a certeza que deseja eliminar esta empresa e TODOS os recursos e reservas associadas?');
+            if (confirmado) {
                 const { error } = await window.supabase.from('empresas').delete().eq('id', id);
                 if (error) {
-                    alert('Erro a eliminar: ' + error.message);
+                    window.showAlertModal('Erro', 'Erro a eliminar: ' + error.message);
                 } else {
                     if (window.refreshGlobalContext) {
                         await window.refreshGlobalContext(session);

@@ -242,7 +242,7 @@ export async function renderReservas(container, session) {
                 },
                 events: events,
                 eventClick: function (info) {
-                    alert(`Reserva de: ${info.event.title}\nEstado: ${info.event.extendedProps.status}\nContacto: ${info.event.extendedProps.contacto}\nPreço: ${info.event.extendedProps.preco}€`);
+                    window.showAlertModal('Detalhes da Reserva', `Reserva de: ${info.event.title}\nEstado: ${info.event.extendedProps.status}\nContacto: ${info.event.extendedProps.contacto}\nPreço: ${info.event.extendedProps.preco}€`);
                 }
             });
             calendar.render();
@@ -255,10 +255,11 @@ export async function renderReservas(container, session) {
             const btnEl = e.currentTarget;
             const id = btnEl.getAttribute('data-id');
             const action = btnEl.getAttribute('data-action');
-            if (confirm('Atualizar reserva para: ' + action.toUpperCase() + '?')) {
+            const confirmado = await window.showConfirmModal('Atualizar Reserva', 'Atualizar reserva para: ' + action.toUpperCase() + '?');
+            if (confirmado) {
                 btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 const { error } = await window.supabase.from('reservas').update({ status: action }).eq('id', id);
-                if (error) alert('Erro: ' + error.message);
+                if (error) window.showAlertModal('Erro', 'Erro: ' + error.message);
                 else setTimeout(() => document.querySelector('[data-view="reservas"]').click(), 0);
             }
         });
@@ -268,10 +269,11 @@ export async function renderReservas(container, session) {
         btn.addEventListener('click', async (e) => {
             const btnEl = e.currentTarget;
             const id = btnEl.getAttribute('data-id');
-            if (confirm('Tem a certeza que deseja APAGAR este registo? Os dados do acompanhante ficarão perdidos indefinidamente.')) {
+            const confirmado = await window.showConfirmModal('Apagar Ocorrência', 'Tem a certeza que deseja APAGAR este registo? Os dados do acompanhante ficarão perdidos indefinidamente.');
+            if (confirmado) {
                 btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 const { error } = await window.supabase.from('reservas').delete().eq('id', id);
-                if (error) alert('Erro: ' + error.message);
+                if (error) window.showAlertModal('Erro', 'Erro: ' + error.message);
                 else setTimeout(() => document.querySelector('[data-view="reservas"]').click(), 0);
             }
         });
@@ -308,7 +310,7 @@ export async function renderReservas(container, session) {
         const dataFim = new Date(document.getElementById('editResFim').value);
 
         if (dataInicio >= dataFim) {
-            alert('A data de fim não pode ser igual ou anterior à data de início.');
+            window.showAlertModal('Erro', 'A data de fim não pode ser igual ou anterior à data de início.');
             return;
         }
 
@@ -332,7 +334,7 @@ export async function renderReservas(container, session) {
         btnSave.disabled = false;
 
         if (error) {
-            alert('Erro a atualizar: ' + error.message);
+            window.showAlertModal('Erro', 'Erro a atualizar: ' + error.message);
         } else {
             setTimeout(() => document.querySelector('[data-view="reservas"]').click(), 0);
         }

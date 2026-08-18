@@ -32,7 +32,7 @@ export async function renderPrecos(container, session) {
         <div class="glass-panel" style="padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
-                    <h3>Gestão de Preços (Sazonal)</h3>
+                    <h3>Gestão de Preços</h3>
                     <p class="text-sub" style="font-size: 0.85rem;">Defina o preço base para um recurso numa determinada época.</p>
                 </div>
                 <button class="btn btn-primary" id="btnNovoPreco" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Novo Preço</button>
@@ -44,35 +44,51 @@ export async function renderPrecos(container, session) {
                 <form id="formPreco">
                     <input type="hidden" id="precoId" value="">
                     
-                    <div style="margin-bottom: 1rem;">
-                        <div class="form-group">
+                    <div style="display: flex; gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px; margin: 0; display: flex; flex-direction: column;">
                             <label>Recurso Alvo</label>
-                            <select id="precoRecursoId" class="form-control" required>
-                                <option value="" disabled selected>Escolha o recurso...</option>
-                                ${meusRecursos && meusRecursos.length > 0
-            ? meusRecursos.map(r => `<option value="${r.id}">${escapeHTML(r.nome)}</option>`).join('')
-            : `<option value="" disabled>Nenhum recurso encontrado na empresa.</option>`}
-                            </select>
+                            <input type="hidden" id="precoRecursoId" value="">
+                            <div class="custom-dropdown" id="precosRecursoDropdown" style="width: 100%;">
+                                <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.9rem 1.2rem;">
+                                    <i class="fa-solid fa-cube icon-left"></i>
+                                    <span class="selected-text">Escolha o recurso...</span>
+                                    <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                                </div>
+                                <div class="custom-dropdown-menu">
+                                    ${meusRecursos && meusRecursos.length > 0
+            ? meusRecursos.map(r => `<div class="custom-option" data-value="${r.id}">${escapeHTML(r.nome)}</div>`).join('')
+            : `<div class="custom-option disabled" style="cursor: default;">Nenhum recurso encontrado na empresa.</div>`}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin: 0; min-width: 250px; display: flex; flex-direction: column;">
+                            <label style="visibility: hidden;">Tipo de Preço</label>
+                            <label for="precoIsDefault" class="form-control" style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; margin: 0; padding: 0.9rem 1.2rem; box-sizing: border-box; flex: 1;">
+                                <input type="checkbox" id="precoIsDefault" style="margin: 0; width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: var(--primary-color);">
+                                <span style="font-weight: 500; font-size: 0.95rem; white-space: nowrap; margin-bottom: 0;">Preço Global (Todo o ano)</span>
+                            </label>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
-                        <input type="checkbox" id="precoIsDefault" style="margin-right: 0.5rem; vertical-align: middle;">
-                        <label for="precoIsDefault" style="display: inline-block; vertical-align: middle; cursor: pointer;">Preço Default (para todo o ano, sem restrição de datas)</label>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div class="form-group" id="groupDataInicio">
-                            <label>Data de Início</label>
-                            <input type="date" id="precoDataInicio" class="form-control">
-                        </div>
-                        <div class="form-group" id="groupDataFim">
-                            <label>Data de Fim</label>
-                            <input type="date" id="precoDataFim" class="form-control">
-                        </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                         <div class="form-group">
                             <label>Preço Base (Em €)</label>
                             <input type="number" step="0.01" min="0" id="precoValor" class="form-control" required placeholder="50.00">
+                        </div>
+                        <div class="form-group" id="groupDataInicio">
+                            <label>Data de Início</label>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="precoDataInicio" class="form-control" placeholder="Selecione a data inicial">
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
+                        </div>
+                        <div class="form-group" id="groupDataFim">
+                            <label>Data de Fim</label>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="precoDataFim" class="form-control" placeholder="Selecione a data final">
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
                         </div>
                     </div>
 
@@ -130,6 +146,15 @@ function setupPrecosListeners(meusRecursos) {
     const mainForm = document.getElementById('formPreco');
     if (!mainForm) return;
 
+    // Initialize custom date pickers
+    if (window.flatpickr) {
+        flatpickr('#precoDataInicio, #precoDataFim', {
+            locale: "pt",
+            dateFormat: "Y-m-d",
+            disableMobile: true // Ensures custom picker even on mobile devices
+        });
+    }
+
     const btnNovo = document.getElementById('btnNovoPreco');
     const formContainer = document.getElementById('formContainerPreco');
     const btnCancelar = document.getElementById('btnCancelarPreco');
@@ -145,15 +170,49 @@ function setupPrecosListeners(meusRecursos) {
             groupDataInicio.style.display = 'none';
             groupDataFim.style.display = 'none';
         } else {
-            groupDataInicio.style.display = 'block';
-            groupDataFim.style.display = 'block';
+            groupDataInicio.style.display = '';
+            groupDataFim.style.display = '';
         }
     });
+
+    // Custom Dropdown Logic
+    const dropdown = document.getElementById('precosRecursoDropdown');
+    if (dropdown) {
+        const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdown.querySelectorAll('.custom-option:not(.disabled)');
+        const textEl = dropdown.querySelector('.selected-text');
+        const hiddenInput = document.getElementById('precoRecursoId');
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdown.classList.remove('open');
+                hiddenInput.value = opt.getAttribute('data-value');
+            });
+        });
+    }
 
     // Toggle Formulário
     btnNovo.addEventListener('click', () => {
         mainForm.reset();
         document.getElementById('precoId').value = '';
+        document.getElementById('precoRecursoId').value = '';
+        if (dropdown) {
+            dropdown.querySelector('.selected-text').textContent = 'Escolha o recurso...';
+            dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+        }
         document.getElementById('precoMsg').style.display = 'none';
         chkDefault.checked = false;
         chkDefault.dispatchEvent(new Event('change'));
@@ -248,7 +307,17 @@ function setupPrecosListeners(meusRecursos) {
         btn.addEventListener('click', (e) => {
             const btnEl = e.currentTarget;
             document.getElementById('precoId').value = btnEl.getAttribute('data-id');
-            document.getElementById('precoRecursoId').value = btnEl.getAttribute('data-recurso');
+            const recursoId = btnEl.getAttribute('data-recurso');
+            document.getElementById('precoRecursoId').value = recursoId;
+
+            if (dropdown) {
+                const opt = dropdown.querySelector(`.custom-option[data-value="${recursoId}"]`);
+                if (opt) {
+                    dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    dropdown.querySelector('.selected-text').textContent = opt.textContent;
+                }
+            }
 
             const dataInicio = btnEl.getAttribute('data-inicio');
             const dataFim = btnEl.getAttribute('data-fim');
@@ -270,10 +339,11 @@ function setupPrecosListeners(meusRecursos) {
     document.querySelectorAll('.btn-delete-preco').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.getAttribute('data-id');
-            if (confirm('Tem a certeza que apagar esta época de preços?')) {
+            const confirmado = await window.showConfirmModal('Apagar Preço', 'Tem a certeza que deseja apagar esta época de preços?');
+            if (confirmado) {
                 const { error } = await window.supabase.from('precos').delete().eq('id', id);
                 if (error) {
-                    alert('Erro a eliminar: ' + error.message);
+                    window.showAlertModal('Erro', 'Erro a eliminar: ' + error.message);
                 } else {
                     setTimeout(() => document.querySelector('[data-view="precos"]').click(), 0);
                 }
