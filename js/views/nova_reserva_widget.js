@@ -19,13 +19,6 @@ export async function renderNovaReservaWidget(container, session) {
         return;
     }
 
-    let resourcesOptions = '<option value="" disabled selected>Selecione uma opção...</option>';
-    if (recursos && recursos.length > 0) {
-        resourcesOptions += recursos.map(r => `<option value="${r.id}">${escapeHTML(r.nome)}</option>`).join('');
-    } else {
-        resourcesOptions = '<option value="" disabled>Nenhum recurso disponível/ativo.</option>';
-    }
-
     // 2. Build the UI
     // Mimics widget.js but uses dashboard styling classes
     let html = `
@@ -40,33 +33,40 @@ export async function renderNovaReservaWidget(container, session) {
             <form id="nr-form">
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label>Escolha o Recurso/Serviço</label>
-                    <select id="nr-recurso" class="form-control" required ${recursos && recursos.length > 0 ? '' : 'disabled'}>
-                        ${resourcesOptions}
-                    </select>
+                    <input type="hidden" id="nr-recurso" required value="">
+                    <div class="custom-dropdown" id="nr-recurso-dropdown" style="width: 100%;">
+                        <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.9rem 1.2rem; ${recursos && recursos.length > 0 ? '' : 'opacity: 0.5; pointer-events: none;'}">
+                            <i class="fa-solid fa-cube icon-left"></i>
+                            <span class="selected-text" id="nr-recurso-text">Selecione uma opção...</span>
+                            <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                        </div>
+                        <div class="custom-dropdown-menu">
+                            ${recursos && recursos.length > 0
+            ? recursos.map(r => `<div class="custom-option" data-value="${r.id}">${escapeHTML(r.nome)}</div>`).join('')
+            : `<div class="custom-option disabled" style="cursor: default;">Nenhum recurso disponível/ativo.</div>`}
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group">
-                        <label>Data/Hora Chegada</label>
-                        <input type="datetime-local" id="nr-inicio" class="form-control" required>
+                        <label>Data/Hora Início</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="nr-inicio" class="form-control" required placeholder="Selecione início">
+                            <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Data/Hora Saída</label>
-                        <input type="datetime-local" id="nr-fim" class="form-control" required>
+                        <label>Data/Hora Fim</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="nr-fim" class="form-control" required placeholder="Selecione fim">
+                            <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                        </div>
                     </div>
                 </div>
-                
-                ${isHotel ? `
-                <div style="margin-bottom: 1rem;">
-                    <div id="nr-price-display" style="margin-top: 0.5rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                        <span style="font-size: 0.9rem;">Preço Previsto (Auto): </span>
-                        <strong id="nr-total-val" style="color: var(--success); font-size: 1.1rem;">A aguardar dadas...</strong>
-                    </div>
-                </div>
-                ` : ''}
 
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Seu Nome (ou Nome Cliente)</label>
+                    <label>Nome Cliente</label>
                     <input type="text" id="nr-nome" class="form-control" required placeholder="Ex: João Silva">
                 </div>
                 
@@ -74,6 +74,15 @@ export async function renderNovaReservaWidget(container, session) {
                     <label>Contacto (Tlm / Email)</label>
                     <input type="text" id="nr-contacto" class="form-control" required placeholder="912345678 ou joao@email.com">
                 </div>
+
+                ${isHotel ? `
+                <div style="margin-bottom: 1.5rem;">
+                    <div id="nr-price-display" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.15);">
+                        <span style="font-size: 1rem; font-weight: 500;">Preço Previsto (Auto):</span>
+                        <strong id="nr-total-val" style="color: var(--warning); font-size: 1.1rem;">A aguardar datas...</strong>
+                    </div>
+                </div>
+                ` : ''}
 
                 <button type="submit" class="btn btn-primary" id="nr-submit-btn" style="width: 100%;"><i class="fa-solid fa-check"></i> Solicitar Reserva</button>
             </form>
@@ -92,6 +101,44 @@ function setupWidgetListeners(empId, isHotel) {
     const selectRecurso = document.getElementById('nr-recurso');
     const alertBox = document.getElementById('nr-alert');
     let precoCalculado = 0;
+
+    if (window.flatpickr) {
+        flatpickr('#nr-inicio, #nr-fim', {
+            locale: "pt",
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            disableMobile: true
+        });
+    }
+
+    const dropdown = document.getElementById('nr-recurso-dropdown');
+    if (dropdown) {
+        const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdown.querySelectorAll('.custom-option:not(.disabled)');
+        const textEl = dropdown.querySelector('.selected-text');
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdown.classList.remove('open');
+                selectRecurso.value = opt.getAttribute('data-value');
+                selectRecurso.dispatchEvent(new Event('change'));
+            });
+        });
+    }
 
     const showAlert = (msg, isError = true) => {
         alertBox.style.display = 'block';
@@ -140,8 +187,8 @@ function setupWidgetListeners(empId, isHotel) {
         const msgEl = document.getElementById('nr-total-val');
 
         if (!recursoId || !tInicio || !tFim) {
-            msgEl.textContent = 'A aguardar dadas...';
-            msgEl.style.color = 'var(--text-secondary)';
+            msgEl.textContent = 'A aguardar datas...';
+            msgEl.style.color = 'var(--warning)';
             precoCalculado = null;
             return;
         }
