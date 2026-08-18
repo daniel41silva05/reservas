@@ -550,3 +550,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     border-color: var(--primary-color) !important;
     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4) !important;
 }
+
+/* Number Inputs Aesthetic Improvements */
+input[type="number"].form-control::-webkit-inner-spin-button,
+input[type="number"].form-control::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"].form-control {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}

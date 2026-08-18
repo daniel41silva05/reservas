@@ -315,3 +315,58 @@ window.showConfirmModal = function (title, message, isAlert = false) {
 window.showAlertModal = function (title, message) {
     return window.showConfirmModal(title, message, true);
 };
+
+window.showInfoModal = function (title, messageHtml) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('globalConfirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const btnAccept = document.getElementById('btnConfirmAccept');
+        const btnCancel = document.getElementById('btnConfirmCancel');
+
+        const iconEl = modal.querySelector('.modal-icon i');
+        const iconWrapper = modal.querySelector('.modal-icon');
+
+        if (!modal) {
+            alert(messageHtml.replace(/<[^>]*>?/gm, ''));
+            resolve(true);
+            return;
+        }
+
+        const origClass = iconEl.className;
+        const origColor = iconWrapper.style.color;
+
+        iconEl.className = 'fa-solid fa-circle-info';
+        iconWrapper.style.color = '#3b82f6';
+
+        titleEl.textContent = title || 'Informação';
+        messageEl.innerHTML = messageHtml;
+        messageEl.style.textAlign = 'left';
+
+        btnCancel.style.display = 'none';
+        btnAccept.textContent = 'OK';
+        btnAccept.className = 'btn btn-primary';
+        btnAccept.style = '';
+
+        modal.classList.remove('hidden');
+
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            btnAccept.removeEventListener('click', onAccept);
+
+            // Revery changes after animation
+            setTimeout(() => {
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+                iconWrapper.style.color = '#ef4444';
+                messageEl.style.textAlign = 'center';
+            }, 300);
+        };
+
+        const onAccept = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        btnAccept.addEventListener('click', onAccept);
+    });
+};

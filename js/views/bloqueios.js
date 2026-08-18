@@ -45,26 +45,39 @@ export async function renderBloqueios(container, session) {
                 <form id="formBloqueio">
                     <input type="hidden" id="bloqueioId" value="">
                     
-                    <div style="margin-bottom: 1rem;">
-                        <div class="form-group">
+                    <div style="display: flex; gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px; margin: 0; display: flex; flex-direction: column;">
                             <label>Recurso a Bloquear</label>
-                            <select id="bloqueioRecursoId" class="form-control" required>
-                                <option value="" disabled selected>Escolha o recurso...</option>
-                                ${meusRecursos && meusRecursos.length > 0
-            ? meusRecursos.map(r => `<option value="${r.id}">${escapeHTML(r.nome)}</option>`).join('')
-            : `<option value="" disabled>Nenhum recurso encontrado na empresa.</option>`}
-                            </select>
+                            <input type="hidden" id="bloqueioRecursoId" value="">
+                            <div class="custom-dropdown" id="bloqueiosRecursoDropdown" style="width: 100%;">
+                                <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.9rem 1.2rem;">
+                                    <i class="fa-solid fa-cube icon-left"></i>
+                                    <span class="selected-text">Escolha o recurso...</span>
+                                    <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                                </div>
+                                <div class="custom-dropdown-menu">
+                                    ${meusRecursos && meusRecursos.length > 0
+            ? meusRecursos.map(r => `<div class="custom-option" data-value="${r.id}">${escapeHTML(r.nome)}</div>`).join('')
+            : `<div class="custom-option disabled" style="cursor: default;">Nenhum recurso encontrado na empresa.</div>`}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                         <div class="form-group">
                             <label>Início (Data e Hora)</label>
-                            <input type="datetime-local" id="bloqueioDataInicio" class="form-control" required>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="bloqueioDataInicio" class="form-control" placeholder="Selecione data e hora iniciais" required>
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Fim (Data e Hora)</label>
-                            <input type="datetime-local" id="bloqueioDataFim" class="form-control" required>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="bloqueioDataFim" class="form-control" placeholder="Selecione data e hora finais" required>
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
                         </div>
                     </div>
 
@@ -99,19 +112,20 @@ export async function renderBloqueios(container, session) {
         bloqueios.forEach(bloq => {
             const recursoNome = bloq.recursos ? bloq.recursos.nome : 'Recurso Removido';
 
-            // O datetime-local HTML necessita de formato YYYY-MM-DDTHH:MM
-            // Vamos formatar logo usando JS vanilla
             const inicioISO = new Date(bloq.data_hora_inicio);
             const fimISO = new Date(bloq.data_hora_fim);
 
-            // Corrige offset para datetime-local
-            const formatForInput = (d) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            // Format for flatpickr (Y-m-d H:i)
+            const formatForInput = (d) => {
+                const off = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                return off.replace('T', ' ');
+            };
 
             html += `
                 <tr>
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
-                    <td style="color: var(--danger);">${formataDataHora(bloq.data_hora_inicio)}</td>
-                    <td style="color: var(--danger);">${formataDataHora(bloq.data_hora_fim)}</td>
+                    <td>${formataDataHora(bloq.data_hora_inicio)}</td>
+                    <td>${formataDataHora(bloq.data_hora_fim)}</td>
                     <td style="text-align: right;">
                         <button class="btn btn-secondary btn-edit-bloqueio" data-id="${bloq.id}" data-empresa="${bloq.empresa_id}" data-recurso="${bloq.recurso_id}" data-inicio="${formatForInput(inicioISO)}" data-fim="${formatForInput(fimISO)}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-secondary btn-delete-bloqueio" data-id="${bloq.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
@@ -133,18 +147,63 @@ function setupBloqueiosListeners(meusRecursos) {
     const mainForm = document.getElementById('formBloqueio');
     if (!mainForm) return;
 
+    if (window.flatpickr) {
+        flatpickr('#bloqueioDataInicio, #bloqueioDataFim', {
+            locale: "pt",
+            enableTime: true,
+            time_24hr: true,
+            dateFormat: "Y-m-d H:i",
+            disableMobile: true
+        });
+    }
+
     const btnNovo = document.getElementById('btnNovoBloqueio');
     const formContainer = document.getElementById('formContainerBloqueio');
     const btnCancelar = document.getElementById('btnCancelarBloqueio');
     const title = document.getElementById('formBloqueioTitle');
     const selectRecurso = document.getElementById('bloqueioRecursoId');
 
+    // Custom Dropdown Logic
+    const dropdown = document.getElementById('bloqueiosRecursoDropdown');
+    if (dropdown) {
+        const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdown.querySelectorAll('.custom-option:not(.disabled)');
+        const textEl = dropdown.querySelector('.selected-text');
+        const hiddenInput = document.getElementById('bloqueioRecursoId');
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdown.classList.remove('open');
+                hiddenInput.value = opt.getAttribute('data-value');
+            });
+        });
+    }
+
     btnNovo.addEventListener('click', () => {
         mainForm.reset();
         document.getElementById('bloqueioId').value = '';
+        document.getElementById('bloqueioRecursoId').value = '';
+        if (dropdown) {
+            dropdown.querySelector('.selected-text').textContent = 'Escolha o recurso...';
+            dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+        }
         document.getElementById('bloqueioMsg').style.display = 'none';
         title.textContent = 'Inserir Bloqueio';
-        formContainer.classList.toggle('hidden');
+        formContainer.classList.remove('hidden');
+        formContainer.scrollIntoView({ behavior: 'smooth' });
     });
 
     btnCancelar.addEventListener('click', () => {
@@ -161,8 +220,10 @@ function setupBloqueiosListeners(meusRecursos) {
         const recursoId = document.getElementById('bloqueioRecursoId').value;
         // O Supabase converte ISO ISO-8606 / timestamptz. Pegamos do date-time
         // Convertendo de hora local para ISO para enviar:
-        const dataInicio = new Date(document.getElementById('bloqueioDataInicio').value).toISOString();
-        const dataFim = new Date(document.getElementById('bloqueioDataFim').value).toISOString();
+        const valInicio = document.getElementById('bloqueioDataInicio').value.replace(' ', 'T');
+        const valFim = document.getElementById('bloqueioDataFim').value.replace(' ', 'T');
+        const dataInicio = new Date(valInicio).toISOString();
+        const dataFim = new Date(valFim).toISOString();
 
         if (!recursoId) {
             msgInfo.textContent = "Erro: Selecione um recurso da empresa.";
@@ -219,10 +280,29 @@ function setupBloqueiosListeners(meusRecursos) {
         btn.addEventListener('click', (e) => {
             const btnEl = e.currentTarget;
             document.getElementById('bloqueioId').value = btnEl.getAttribute('data-id');
-            document.getElementById('bloqueioRecursoId').value = btnEl.getAttribute('data-recurso');
 
-            document.getElementById('bloqueioDataInicio').value = btnEl.getAttribute('data-inicio');
-            document.getElementById('bloqueioDataFim').value = btnEl.getAttribute('data-fim');
+            const recursoId = btnEl.getAttribute('data-recurso');
+            document.getElementById('bloqueioRecursoId').value = recursoId;
+
+            if (dropdown) {
+                const opt = dropdown.querySelector(`.custom-option[data-value="${recursoId}"]`);
+                if (opt) {
+                    dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    dropdown.querySelector('.selected-text').textContent = opt.textContent;
+                }
+            }
+
+            const dataI = btnEl.getAttribute('data-inicio');
+            const dataF = btnEl.getAttribute('data-fim');
+
+            if (window.flatpickr && document.getElementById('bloqueioDataInicio')._flatpickr) {
+                document.getElementById('bloqueioDataInicio')._flatpickr.setDate(dataI);
+                document.getElementById('bloqueioDataFim')._flatpickr.setDate(dataF);
+            } else {
+                document.getElementById('bloqueioDataInicio').value = dataI;
+                document.getElementById('bloqueioDataFim').value = dataF;
+            }
 
             title.textContent = 'Editar Bloqueio de Calendário';
             formContainer.classList.remove('hidden');

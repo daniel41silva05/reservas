@@ -36,9 +36,9 @@ export async function renderReservas(container, session) {
                     <p class="text-sub" style="font-size: 0.85rem;">Gerir o status e visualizar ocupação no calendário.</p>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <div style="display: flex; background: rgba(255, 255, 255, 0.05); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
-                        <button id="btnViewList" class="btn" style="border-radius: 0; background: var(--accent-primary); border: none; padding: 0.5rem 1rem;">Lista</button>
-                        <button id="btnViewCalendar" class="btn" style="border-radius: 0; background: transparent; border: none; padding: 0.5rem 1rem;">Calendário</button>
+                    <div style="display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
+                        <button id="btnViewList" class="btn" style="border-radius: 0; background: var(--primary-color); color: #fff; border: none; padding: 0.5rem 1rem;">Lista</button>
+                        <button id="btnViewCalendar" class="btn" style="border-radius: 0; background: transparent; color: var(--text-main); border: none; padding: 0.5rem 1rem;">Calendário</button>
                     </div>
                 </div>
             </div>
@@ -46,11 +46,82 @@ export async function renderReservas(container, session) {
             <div id="reservasOverview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--warning);">
                     <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Pendentes</h5>
-                    <div style="font-size: 1.5rem; font-weight: 700;">${countPendentes}</div>
+                    <div id="overviewPendentes" style="font-size: 1.5rem; font-weight: 700;">${countPendentes}</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--success);">
                     <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Confirmadas</h5>
-                    <div style="font-size: 1.5rem; font-weight: 700;">${countConfirmadas}</div>
+                    <div id="overviewConfirmadas" style="font-size: 1.5rem; font-weight: 700;">${countConfirmadas}</div>
+                </div>
+            </div>
+
+            <!-- FILTERS TOGGLE BUTTON -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button id="btnToggleFilters" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                    <i class="fa-solid fa-filter"></i> Mostrar Filtros
+                </button>
+            </div>
+
+            <!-- FILTERS CONTAINER -->
+            <div id="filtersContainer" class="hidden" style="background: rgba(0,0,0,0.15); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                <h5 style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">Filtros de Pesquisa</h5>
+                <!-- Row 1 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="form-group mb-0">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">Cliente/Contacto</label>
+                        <input type="text" id="filterCliente" class="form-control" placeholder="Buscar..." style="padding: 0.75rem 1rem;">
+                    </div>
+                    <div class="form-group mb-0" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">Recurso</label>
+                        <input type="hidden" id="filterRecurso" value="">
+                        <div class="custom-dropdown" id="filterRecursoDropdown" style="width: 100%;">
+                            <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.75rem 1rem;">
+                                <i class="fa-solid fa-cube icon-left"></i>
+                                <span class="selected-text">Todos os Recursos</span>
+                                <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                            </div>
+                            <div class="custom-dropdown-menu">
+                                <div class="custom-option active" data-value="">Todos os Recursos</div>
+                                ${recursos ? recursos.map(r => `<div class="custom-option" data-value="${escapeHTML(r.nome)}">${escapeHTML(r.nome)}</div>`).join('') : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">Estado</label>
+                        <input type="hidden" id="filterEstado" value="">
+                        <div class="custom-dropdown" id="filterEstadoDropdown" style="width: 100%;">
+                            <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.75rem 1rem;">
+                                <i class="fa-solid fa-circle-half-stroke icon-left"></i>
+                                <span class="selected-text">Todos os Estados</span>
+                                <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                            </div>
+                            <div class="custom-dropdown-menu">
+                                <div class="custom-option active" data-value="">Todos os Estados</div>
+                                <div class="custom-option" data-value="pendente">Pendente</div>
+                                <div class="custom-option" data-value="confirmada">Confirmada</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Row 2 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                    <div class="form-group mb-0">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">De</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="filterDataInicio" class="form-control" placeholder="Selecione data limite" style="padding: 0.75rem 1rem;">
+                            <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">Até</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="filterDataFim" class="form-control" placeholder="Selecione data limite" style="padding: 0.75rem 1rem;">
+                            <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0" style="display: flex;">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary" style="width: 100%; padding: 0.75rem 1rem;"><i class="fa-solid fa-eraser"></i> Limpar Filtros</button>
+                    </div>
                 </div>
             </div>
 
@@ -72,12 +143,18 @@ export async function renderReservas(container, session) {
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div class="form-group">
-                            <label>Início</label>
-                            <input type="datetime-local" id="editResInicio" class="form-control" required>
+                            <label>Início (Data e Hora)</label>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="editResInicio" class="form-control" placeholder="Selecione data e hora iniciais" required>
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label>Fim</label>
-                            <input type="datetime-local" id="editResFim" class="form-control" required>
+                            <label>Fim (Data e Hora)</label>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="editResFim" class="form-control" placeholder="Selecione data e hora finais" required>
+                                <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
+                            </div>
                         </div>
                     </div>
 
@@ -88,10 +165,18 @@ export async function renderReservas(container, session) {
                         </div>
                         <div class="form-group">
                             <label>Estado</label>
-                            <select id="editResStatus" class="form-control" required>
-                                <option value="pendente">Pendente</option>
-                                <option value="confirmada">Confirmada</option>
-                            </select>
+                            <input type="hidden" id="editResStatus" value="">
+                            <div class="custom-dropdown" id="editResStatusDropdown" style="width: 100%;">
+                                <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.9rem 1.2rem;">
+                                    <i class="fa-solid fa-circle-half-stroke icon-left"></i>
+                                    <span class="selected-text">Selecione o estado...</span>
+                                    <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                                </div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-option" data-value="pendente">Pendente</div>
+                                    <div class="custom-option" data-value="confirmada">Confirmada</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -132,17 +217,21 @@ export async function renderReservas(container, session) {
     if (reservas && reservas.length > 0) {
         reservas.forEach(res => {
             const recursoNome = res.recursos ? res.recursos.nome : 'N/A';
-            const formatForInput = (d) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            const formatForInput = (d) => {
+                const off = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                return off.replace('T', ' ');
+            };
 
             html += `
-                <tr style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
+                <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_contacto)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
                     <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_contacto)}</small></td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
                     <td>${getStatusBadge(res.status)}</td>
-                    <td style="text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-                        <button class="btn btn-secondary btn-edit-reserva" 
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 0.5rem; align-items: center; white-space: nowrap;">
+                            <button class="btn btn-secondary btn-edit-reserva" 
                             data-id="${res.id}" 
                             data-nome="${escapeHTML(res.cliente_nome)}" 
                             data-contacto="${escapeHTML(res.cliente_contacto)}" 
@@ -158,6 +247,7 @@ export async function renderReservas(container, session) {
                             <button class="btn btn-secondary btn-action-reserva" data-id="${res.id}" data-action="pendente" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--warning);" title="Reverter para Pendente"><i class="fa-solid fa-clock"></i></button>
                             <button class="btn btn-secondary btn-delete-reserva" data-id="${res.id}" title="Apagar Ocorrência" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                         `}
+                        </div>
                     </td>
                 </tr>
             `;
@@ -189,16 +279,20 @@ export async function renderReservas(container, session) {
     let calendar; // to hold FullCalendar instance
 
     btnList.addEventListener('click', () => {
-        btnList.style.background = 'var(--accent-primary)';
+        btnList.style.background = 'var(--primary-color)';
+        btnList.style.color = '#fff';
         btnCal.style.background = 'transparent';
+        btnCal.style.color = 'var(--text-main)';
         viewList.style.display = 'block';
         overview.style.display = 'grid';
         viewCal.style.display = 'none';
     });
 
     btnCal.addEventListener('click', () => {
-        btnCal.style.background = 'var(--accent-primary)';
+        btnCal.style.background = 'var(--primary-color)';
+        btnCal.style.color = '#fff';
         btnList.style.background = 'transparent';
+        btnList.style.color = 'var(--text-main)';
         viewList.style.display = 'none';
         overview.style.display = 'none';
         viewCal.style.display = 'block';
@@ -229,6 +323,10 @@ export async function renderReservas(container, session) {
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'pt',
+                displayEventTime: false,
+                eventDidMount: function (info) {
+                    info.el.style.cursor = 'pointer';
+                },
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -242,10 +340,49 @@ export async function renderReservas(container, session) {
                 },
                 events: events,
                 eventClick: function (info) {
-                    window.showAlertModal('Detalhes da Reserva', `Reserva de: ${info.event.title}\nEstado: ${info.event.extendedProps.status}\nContacto: ${info.event.extendedProps.contacto}\nPreço: ${info.event.extendedProps.preco}€`);
+                    const price = parseFloat(info.event.extendedProps.preco) > 0 ? info.event.extendedProps.preco + '€' : '--';
+
+                    const formataData = (d) => {
+                        if (!d) return '';
+                        return d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    };
+                    const dataRange = info.event.end ? `${formataData(info.event.start)} até ${formataData(info.event.end)}` : formataData(info.event.start);
+
+                    const html = `
+                        <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.9rem;">
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-user-tag" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Reserva de:</strong> ${escapeHTML(info.event.title)}
+                            </li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-regular fa-calendar-check" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Início:</strong> ${formataData(info.event.start)}
+                            </li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-regular fa-calendar-times" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Fim:</strong> ${info.event.end ? formataData(info.event.end) : formataData(info.event.start)}
+                            </li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-circle-half-stroke" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Estado:</strong> ${escapeHTML(info.event.extendedProps.status)}
+                            </li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-phone" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Contacto:</strong> ${escapeHTML(info.event.extendedProps.contacto)}
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-money-bill" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Preço:</strong> ${price}
+                            </li>
+                        </ul>
+                    `;
+                    window.showInfoModal('Detalhes da Reserva', html);
                 }
             });
             calendar.render();
+            if (typeof applyFilters === 'function') {
+                applyFilters();
+            }
         }
     });
 
@@ -279,6 +416,46 @@ export async function renderReservas(container, session) {
         });
     });
 
+    // Configurar Flatpickr
+    if (window.flatpickr) {
+        flatpickr('#editResInicio, #editResFim', {
+            locale: "pt",
+            enableTime: true,
+            time_24hr: true,
+            dateFormat: "Y-m-d H:i",
+            disableMobile: true
+        });
+    }
+
+    // Configurar Dropdown de Estado
+    const dropdownStatus = document.getElementById('editResStatusDropdown');
+    const hiddenStatus = document.getElementById('editResStatus');
+    if (dropdownStatus) {
+        const selectedEl = dropdownStatus.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdownStatus.querySelectorAll('.custom-option');
+        const textEl = dropdownStatus.querySelector('.selected-text');
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownStatus.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            dropdownStatus.classList.remove('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdownStatus.classList.remove('open');
+                hiddenStatus.value = opt.getAttribute('data-value');
+            });
+        });
+    }
+
     // Inline Edit Form Logic
     const formEdit = document.getElementById('formEditReserva');
     const containerEdit = document.getElementById('formContainerReserva');
@@ -293,10 +470,29 @@ export async function renderReservas(container, session) {
             document.getElementById('editReservaId').value = b.getAttribute('data-id');
             document.getElementById('editResNome').value = b.getAttribute('data-nome');
             document.getElementById('editResContacto').value = b.getAttribute('data-contacto');
-            document.getElementById('editResInicio').value = b.getAttribute('data-inicio');
-            document.getElementById('editResFim').value = b.getAttribute('data-fim');
             document.getElementById('editResPreco').value = b.getAttribute('data-preco');
-            document.getElementById('editResStatus').value = b.getAttribute('data-status');
+
+            const statusVal = b.getAttribute('data-status');
+            hiddenStatus.value = statusVal;
+            if (dropdownStatus) {
+                const opt = dropdownStatus.querySelector(`.custom-option[data-value="${statusVal}"]`);
+                if (opt) {
+                    dropdownStatus.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    dropdownStatus.querySelector('.selected-text').textContent = opt.textContent;
+                }
+            }
+
+            const dataI = b.getAttribute('data-inicio');
+            const dataF = b.getAttribute('data-fim');
+
+            if (window.flatpickr && document.getElementById('editResInicio')._flatpickr) {
+                document.getElementById('editResInicio')._flatpickr.setDate(dataI);
+                document.getElementById('editResFim')._flatpickr.setDate(dataF);
+            } else {
+                document.getElementById('editResInicio').value = dataI;
+                document.getElementById('editResFim').value = dataF;
+            }
 
             containerEdit.classList.remove('hidden');
             containerEdit.scrollIntoView({ behavior: 'smooth' });
@@ -306,8 +502,10 @@ export async function renderReservas(container, session) {
     formEdit?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const dataInicio = new Date(document.getElementById('editResInicio').value);
-        const dataFim = new Date(document.getElementById('editResFim').value);
+        const valInicio = document.getElementById('editResInicio').value.replace(' ', 'T');
+        const valFim = document.getElementById('editResFim').value.replace(' ', 'T');
+        const dataInicio = new Date(valInicio);
+        const dataFim = new Date(valFim);
 
         if (dataInicio >= dataFim) {
             window.showAlertModal('Erro', 'A data de fim não pode ser igual ou anterior à data de início.');
@@ -338,6 +536,194 @@ export async function renderReservas(container, session) {
         } else {
             setTimeout(() => document.querySelector('[data-view="reservas"]').click(), 0);
         }
+    });
+
+    // Filter logic
+    const applyFilters = () => {
+        const fCliente = document.getElementById('filterCliente').value.toLowerCase();
+        const fRecurso = document.getElementById('filterRecurso').value.toLowerCase();
+        const fEstado = document.getElementById('filterEstado').value.toLowerCase();
+        const fInicio = document.getElementById('filterDataInicio').value;
+        const fFim = document.getElementById('filterDataFim').value;
+
+        const inicioTime = fInicio ? new Date(fInicio).getTime() : null;
+        const fimTime = fFim ? new Date(fFim + 'T23:59:59').getTime() : null; // end of day
+
+        let currentCountPendentes = 0;
+        let currentCountConfirmadas = 0;
+
+        // Filter Table Rows
+        document.querySelectorAll('#viewListContainer tbody tr.reserva-row').forEach(tr => {
+            const cliente = (tr.getAttribute('data-cliente') || '').toLowerCase();
+            const recurso = (tr.getAttribute('data-recurso') || '').toLowerCase();
+            const estado = (tr.getAttribute('data-estado') || '').toLowerCase();
+            const inicio = new Date(tr.getAttribute('data-inicio')).getTime();
+
+            let show = true;
+            if (fCliente && (!cliente || !cliente.includes(fCliente))) show = false;
+            if (fRecurso && (!recurso || recurso !== fRecurso)) show = false;
+
+            if (fEstado) {
+                if (fEstado === 'rejeitada') {
+                    if (estado !== 'rejeitada' && estado !== 'cancelada') show = false;
+                } else {
+                    if (estado !== fEstado) show = false;
+                }
+            }
+            if (inicioTime && inicio < inicioTime) show = false;
+            if (fimTime && inicio > fimTime) show = false;
+
+            tr.style.display = show ? '' : 'none';
+
+            if (show) {
+                if (estado === 'pendente') currentCountPendentes++;
+                if (estado === 'confirmada') currentCountConfirmadas++;
+            }
+        });
+
+        // Filter Calendar
+        if (calendar) {
+            const filteredEvents = reservas.filter(r => {
+                const cliente = (r.cliente_nome + ' ' + (r.cliente_contacto || '')).toLowerCase();
+                const recurso = r.recursos ? r.recursos.nome.toLowerCase() : '';
+                const estado = r.status.toLowerCase();
+                const reservaInicioTime = new Date(r.data_hora_inicio).getTime();
+
+                let show = true;
+                if (fCliente && !cliente.includes(fCliente)) show = false;
+                if (fRecurso && recurso !== fRecurso) show = false;
+
+                if (fEstado) {
+                    if (fEstado === 'rejeitada') {
+                        if (estado !== 'rejeitada' && estado !== 'cancelada') show = false;
+                    } else {
+                        if (estado !== fEstado) show = false;
+                    }
+                }
+                if (inicioTime && reservaInicioTime < inicioTime) show = false;
+                if (fimTime && reservaInicioTime > fimTime) show = false;
+
+                return show;
+            }).map(r => {
+                let color = '#fbbf24';
+                if (r.status === 'confirmada') color = '#34d399';
+                if (r.status === 'rejeitada' || r.status === 'cancelada') color = '#ef4444';
+                return {
+                    id: r.id,
+                    title: `${r.cliente_nome} (${r.recursos?.nome})`,
+                    start: r.data_hora_inicio,
+                    end: r.data_hora_fim,
+                    backgroundColor: color,
+                    borderColor: 'transparent',
+                    extendedProps: {
+                        status: r.status,
+                        contacto: r.cliente_contacto,
+                        preco: r.preco_final,
+                        recursoNome: r.recursos?.nome
+                    }
+                };
+            });
+
+            calendar.removeAllEvents();
+            calendar.addEventSource(filteredEvents);
+        }
+
+        document.getElementById('overviewPendentes').textContent = currentCountPendentes;
+        document.getElementById('overviewConfirmadas').textContent = currentCountConfirmadas;
+    };
+
+    // Filter logic UI setup
+    const btnToggleF = document.getElementById('btnToggleFilters');
+    const fContainer = document.getElementById('filtersContainer');
+    if (btnToggleF) {
+        btnToggleF.addEventListener('click', () => {
+            fContainer.classList.toggle('hidden');
+            if (fContainer.classList.contains('hidden')) {
+                btnToggleF.innerHTML = '<i class="fa-solid fa-filter"></i> Mostrar Filtros';
+            } else {
+                btnToggleF.innerHTML = '<i class="fa-solid fa-filter"></i> Ocultar Filtros';
+            }
+        });
+    }
+
+    if (window.flatpickr) {
+        flatpickr('#filterDataInicio, #filterDataFim', {
+            locale: "pt",
+            dateFormat: "Y-m-d",
+            disableMobile: true,
+            onChange: applyFilters
+        });
+    }
+
+    const setDropdownFilter = (dropdownId, hiddenInputId) => {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdown.querySelectorAll('.custom-option');
+        const textEl = dropdown.querySelector('.selected-text');
+        const hiddenInput = document.getElementById(hiddenInputId);
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdown.classList.remove('open');
+                hiddenInput.value = opt.getAttribute('data-value');
+                applyFilters();
+            });
+        });
+    };
+
+    setDropdownFilter('filterRecursoDropdown', 'filterRecurso');
+    setDropdownFilter('filterEstadoDropdown', 'filterEstado');
+
+    document.addEventListener('click', (e) => {
+        document.getElementById('filterRecursoDropdown')?.classList.remove('open');
+        document.getElementById('filterEstadoDropdown')?.classList.remove('open');
+    });
+
+    ['filterCliente'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', applyFilters);
+    });
+
+    document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {
+        document.getElementById('filterCliente').value = '';
+
+        // reset recurso dropdown
+        document.getElementById('filterRecurso').value = '';
+        const recDrop = document.getElementById('filterRecursoDropdown');
+        if (recDrop) {
+            recDrop.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+            const initialRec = recDrop.querySelector('.custom-option[data-value=""]');
+            if (initialRec) initialRec.classList.add('active');
+            recDrop.querySelector('.selected-text').textContent = 'Todos os Recursos';
+        }
+
+        // reset estado dropdown
+        document.getElementById('filterEstado').value = '';
+        const stDrop = document.getElementById('filterEstadoDropdown');
+        if (stDrop) {
+            stDrop.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+            const initialSt = stDrop.querySelector('.custom-option[data-value=""]');
+            if (initialSt) initialSt.classList.add('active');
+            stDrop.querySelector('.selected-text').textContent = 'Todos os Estados';
+        }
+
+        if (window.flatpickr) {
+            document.getElementById('filterDataInicio')._flatpickr?.clear();
+            document.getElementById('filterDataFim')._flatpickr?.clear();
+        } else {
+            document.getElementById('filterDataInicio').value = '';
+            document.getElementById('filterDataFim').value = '';
+        }
+        applyFilters();
     });
 
     // Nova Reserva removida daqui - ver módulo dashboard (nova_reserva_widget.js)
