@@ -11,6 +11,7 @@
     const checkin = container.getAttribute('data-checkin') || '';
     const checkout = container.getAttribute('data-checkout') || '';
     const duracao = container.getAttribute('data-duracao') || '';
+    const bgColor = container.getAttribute('data-bg-color') || '';
 
     if (!empresaId) {
         container.innerHTML = '<div style="color:red; padding: 10px; font-family: sans-serif;">Erro: data-empresa-id em falta no widget.</div>';
@@ -30,7 +31,8 @@
         recurso: recursoFixoId,
         checkin: checkin,
         checkout: checkout,
-        duracao: duracao
+        duracao: duracao,
+        bgcolor: bgColor
     });
 
     const iframe = document.createElement('iframe');
@@ -49,7 +51,7 @@
     // Auto-resize listener para adaptar a altura do iframe ao conteúdo interno
     window.addEventListener('message', function(e) {
         if (e.data && e.data.type === 'resize' && e.data.height) {
-            iframe.style.height = (e.data.height + 20) + 'px'; // +20px para margem de segurança
+            iframe.style.height = (e.data.height) + 'px';
         }
     });
 })();
