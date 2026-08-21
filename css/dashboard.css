@@ -562,3 +562,127 @@ input[type="number"].form-control {
     -moz-appearance: textfield;
     appearance: textfield;
 }
+
+/* ──────────────────────────────────────────
+   Nova Reserva Widget – Calendar Styles
+   ────────────────────────────────────────── */
+
+/* FullCalendar toolbar: restore title color */
+.fc .fc-toolbar-title {
+    color: var(--text-main, #e2e8f0) !important;
+    font-size: 1.1rem !important;
+}
+.fc .fc-button {
+    background: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: var(--text-main, #e2e8f0) !important;
+}
+.fc .fc-button:hover {
+    background: rgba(255,255,255,0.14) !important;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background: var(--primary-color, #6366f1) !important;
+    border-color: var(--primary-color, #6366f1) !important;
+}
+
+/* Column header (day-of-week row) - keep transparent, not white */
+.fc .fc-col-header {
+    background: transparent !important;
+}
+.fc .fc-col-header-cell {
+    background: transparent !important;
+    border-color: var(--border-color, rgba(255,255,255,0.1)) !important;
+}
+.fc .fc-col-header-cell-cushion {
+    color: var(--text-main, #e2e8f0) !important;
+    text-decoration: none !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 6px 4px;
+}
+
+/* Hide garbled time text inside selectMirror / selection events */
+.fc-event.fc-mirror .fc-event-time,
+.fc-event.fc-mirror .fc-event-title {
+    display: none !important;
+}
+
+/* Hide all-day section */
+.fc-timegrid-divider {
+    display: none !important;
+}
+
+/* Hotel: blocked day cells - diagonal stripe pattern */
+.nr-day-blocked {
+    pointer-events: none !important;
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.12),
+        rgba(239, 68, 68, 0.12) 4px,
+        rgba(239, 68, 68, 0.03) 4px,
+        rgba(239, 68, 68, 0.03) 10px
+    ) !important;
+    opacity: 0.55 !important;
+}
+
+/* Hotel: blocked badge (ban icon) bottom-right of cell */
+.nr-blocked-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-size: 0.7rem;
+    color: rgba(239, 68, 68, 0.75);
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* Hotel: available day cells - subtle green hover */
+.nr-day-available:not(.fc-day-other):hover .fc-daygrid-day-frame {
+    background: rgba(52, 211, 153, 0.08) !important;
+    transition: background 0.15s ease;
+}
+.nr-day-available:not(.fc-day-other) {
+    cursor: pointer;
+}
+
+/* Hotel: selected range background events */
+.fc-bg-event {
+    opacity: 0.35 !important;
+}
+
+/* Hotel: today highlight */
+.fc-day-today.nr-day-available {
+    background: rgba(99, 102, 241, 0.07) !important;
+}
+
+/* Non-hotel: unavailable slot events - styled via eventDidMount with stripe pattern */
+.nr-unavailable-slot {
+    background: transparent !important;
+    border: none !important;
+}
+/* Ensure fc-event wrapper doesn't override inline styles */
+.fc-timegrid-event.nr-unavailable-slot .fc-event-main {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+/* Non-hotel: ensure hidden slots leave no gap */
+.fc-timegrid-slot[data-time] {
+    transition: none;
+}
+
+/* Check-in / Check-out / Duration select styling */
+#nr-hora-checkin,
+#nr-hora-checkout,
+#nr-duracao {
+    appearance: auto;
+    -webkit-appearance: auto;
+    padding-right: 2rem;
+}
+
+/* Tooltip z-index safety */
+#nr-cal-tooltip {
+    z-index: 99999 !important;
+}
+
