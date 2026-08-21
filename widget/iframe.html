@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Reserva</title>
+    
+    <!-- Dashboard Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=3">
+    <link rel="stylesheet" href="../css/dashboard.css?v=3">
+    
+    <!-- Dependencies from Dashboard -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css" id="fp-dark-theme">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+
+    <style>
+        /* Iframe explicit transparent background */
+        html, body {
+            background-color: transparent !important;
+            padding: 0;
+            margin: 0;
+            overflow: hidden; /* Let host handle scroll or just auto-resize */
+        }
+        /* Make sure glass panels span full width */
+        #root {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <div id="root"></div>
+
+    <script src="../env.js"></script>
+    <script>
+        // Polyfill escapeHTML globally
+        window.escapeHTML = function(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const empresaId = params.get('empresa');
+        const tipo = params.get('tipo') || 'hotel';
+        const color = params.get('color');
+        const recursoFixoId = params.get('recurso');
+
+        if (color) {
+            document.documentElement.style.setProperty('--primary-color', color);
+            document.documentElement.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${color} 0%, var(--secondary-color) 100%)`);
+        }
+
+        // Setup mock dashboard context for nova_reserva_widget.js
+        window.dashboardContext = {
+            currentEmpresaId: empresaId,
+            currentEmpresaTipo: tipo
+        };
+
+        // Initialize Supabase
+        const url = (window.ENV && window.ENV.SUPABASE_URL) ? window.ENV.SUPABASE_URL : 'https://pvwuubqqkcpqswhravpa.supabase.co';
+        const key = (window.ENV && window.ENV.SUPABASE_ANON_KEY) ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
+        window.supabase = window.supabase.createClient(url, key);
+
+        // ResizeObserver to send height to parent widget.js
+        const resizeObserver = new ResizeObserver((entries) => {
+            if (!entries || entries.length === 0) return;
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({ type: 'resize', height: height }, '*');
+        });
+        resizeObserver.observe(document.body);
+    </script>
+
+    <!-- Load the exact widget from the dashboard -->
+    <script type="module">
+        import { renderNovaReservaWidget } from '../js/views/nova_reserva_widget.js';
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const root = document.getElementById('root');
+            
+            try {
+                await renderNovaReservaWidget(root, null);
+
+                // If a fixed resource is set in the host config, pre-select it after render
+                if (new URLSearchParams(window.location.search).get('recurso')) {
+                    const recId = new URLSearchParams(window.location.search).get('recurso');
+                    if (recId) {
+                        const customOpt = document.querySelector(`.custom-option[data-value="${recId}"]`);
+                        if (customOpt) {
+                            customOpt.click(); // Trigger the custom dropdown's click handler
+                            // Disable the dropdown to enforce fixed selection
+                            const dd = document.getElementById('nr-recurso-dropdown');
+                            if (dd) {
+                                dd.style.pointerEvents = 'none';
+                                dd.style.opacity = '0.7';
+                            }
+                        }
+                    }
+                }
+
+                // If checkin, checkout, or duracao are fixed in host config
+                const searchParams = new URLSearchParams(window.location.search);
+                const ci = searchParams.get('checkin');
+                const co = searchParams.get('checkout');
+                const dur = searchParams.get('duracao');
+
+                if (ci) {
+                    const ciEl = document.getElementById('nr-hora-checkin');
+                    if (ciEl) {
+                        ciEl.value = ci;
+                        ciEl.style.pointerEvents = 'none';
+                        ciEl.style.opacity = '0.7';
+                    }
+                }
+                
+                if (co) {
+                    const coEl = document.getElementById('nr-hora-checkout');
+                    if (coEl) {
+                        coEl.value = co;
+                        coEl.style.pointerEvents = 'none';
+                        coEl.style.opacity = '0.7';
+                    }
+                }
+
+                if (dur) {
+                    const durEl = document.getElementById('nr-duracao');
+                    if (durEl) {
+                        durEl.value = dur;
+                        durEl.style.pointerEvents = 'none';
+                        durEl.style.opacity = '0.7';
+                    }
+                }
+                
+                // Force an initial resize message just in case
+                setTimeout(() => {
+                    window.parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+                }, 500);
+
+            } catch (err) {
+                root.innerHTML = `<div class="glass-panel" style="padding: 2rem; color: var(--danger);">Erro: ${escapeHTML(err.message)}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
