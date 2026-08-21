@@ -7,6 +7,13 @@
     // Obter dados do host
     const empresaId = container.getAttribute('data-empresa-id');
     const darkMode = container.getAttribute('data-theme') === 'dark';
+    
+    // Novas configurações de negócio
+    const tipoNegocio = container.getAttribute('data-tipo') || 'hotel'; // 'hotel' ou 'servico'
+    const horaCheckin = container.getAttribute('data-checkin') || '14:00';
+    const horaCheckout = container.getAttribute('data-checkout') || '11:00';
+    const duracaoServico = parseInt(container.getAttribute('data-duracao')) || 60; // minutos
+    const recursoFixoId = container.getAttribute('data-recurso-id'); // Opcional
 
     // Supabase Credentials (neste cenário de SaaS o cliente embute o widget, mas usa as tuas credenciais public para aceder à tua DB limitadamente via RLS)
     const SUPABASE_URL = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_URL : 'SUA_URL_AQUI';
@@ -64,23 +71,37 @@
             <div id="rz-alert" class="rz-alert"></div>
 
             <form id="rz-booking-form">
-                <div class="rz-form-group">
+                <div class="rz-form-group" ${recursoFixoId ? 'style="display: none;"' : ''}>
                     <label>Escolha o Recurso/Serviço</label>
                     <select id="rz-recurso" class="rz-form-control" required disabled>
                         <option value="">A carregar...</option>
                     </select>
                 </div>
+                
+                ${recursoFixoId ? `
+                <div class="rz-form-group">
+                    <label>Serviço/Recurso</label>
+                    <input type="text" id="rz-recurso-nome-fixo" class="rz-form-control" disabled value="A carregar...">
+                </div>
+                ` : ''}
 
+                ${tipoNegocio === 'hotel' ? `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="rz-form-group">
-                        <label>Data/Hora Chegada</label>
-                        <input type="datetime-local" id="rz-inicio" class="rz-form-control" required>
+                        <label>Data Chegada (a partir das ${horaCheckin})</label>
+                        <input type="date" id="rz-inicio-data" class="rz-form-control" required>
                     </div>
                     <div class="rz-form-group">
-                        <label>Data/Hora Saída</label>
-                        <input type="datetime-local" id="rz-fim" class="rz-form-control" required>
+                        <label>Data Saída (até às ${horaCheckout})</label>
+                        <input type="date" id="rz-fim-data" class="rz-form-control" required>
                     </div>
                 </div>
+                ` : `
+                <div class="rz-form-group">
+                    <label>Data e Hora do Serviço (Duração: ${duracaoServico} min)</label>
+                    <input type="datetime-local" id="rz-inicio-datetime" class="rz-form-control" required>
+                </div>
+                `}
                 
                 <div id="rz-details" class="rz-details-box" style="display: none;">
                     <div style="font-size: 0.85rem; color: #666;">Resumo</div>
@@ -126,10 +147,22 @@
 
         if (recursos.length === 0) {
             select.innerHTML = '<option value="">Nenhum serviço disponível no momento.</option>';
+            if (recursoFixoId) document.getElementById('rz-recurso-nome-fixo').value = "Indisponível";
         } else {
             select.innerHTML = '<option value="" disabled selected>Selecione uma opção...</option>' +
                 recursos.map(r => `<option value="${r.id}">${r.nome}</option>`).join('');
-            select.disabled = false;
+                
+            if (recursoFixoId) {
+                select.value = recursoFixoId;
+                const recFixo = recursos.find(r => r.id == recursoFixoId);
+                if (recFixo) {
+                    document.getElementById('rz-recurso-nome-fixo').value = recFixo.nome;
+                } else {
+                    document.getElementById('rz-recurso-nome-fixo').value = "Serviço não encontrado";
+                }
+            } else {
+                select.disabled = false;
+            }
         }
     }
 
@@ -137,23 +170,39 @@
 
     function setupListeners() {
         const form = document.getElementById('rz-booking-form');
-        const inputInicio = document.getElementById('rz-inicio');
-        const inputFim = document.getElementById('rz-fim');
         const selectRecurso = document.getElementById('rz-recurso');
+        
+        let inputInicioData = document.getElementById('rz-inicio-data');
+        let inputFimData = document.getElementById('rz-fim-data');
+        let inputInicioDatetime = document.getElementById('rz-inicio-datetime');
+
+        // Função auxiliar para obter as datas de início e fim baseadas na configuração
+        const getDates = () => {
+            if (tipoNegocio === 'hotel') {
+                if (!inputInicioData.value || !inputFimData.value) return null;
+                // Combina data escolhida com hora fixa
+                const start = new Date(`${inputInicioData.value}T${horaCheckin}`);
+                const end = new Date(`${inputFimData.value}T${horaCheckout}`);
+                return { start, end };
+            } else {
+                if (!inputInicioDatetime.value) return null;
+                const start = new Date(inputInicioDatetime.value);
+                const end = new Date(start.getTime() + duracaoServico * 60000); // adiciona minutos
+                return { start, end };
+            }
+        };
 
         // Sempre que o utilizador altera datas ou recurso, tentamos verificar disponibilidade e preço
         const checkAvailabilityAndPrice = async () => {
             const recursoId = selectRecurso.value;
-            const tInicio = inputInicio.value;
-            const tFim = inputFim.value;
+            const dates = getDates();
 
-            if (!recursoId || !tInicio || !tFim) return;
+            if (!recursoId || !dates) return;
 
-            const inicio = new Date(tInicio);
-            const fim = new Date(tFim);
+            const { start: inicio, end: fim } = dates;
 
             if (inicio >= fim) {
-                showAlert('A data de saída tem de ser após a data de chegada.', 'error');
+                showAlert(tipoNegocio === 'hotel' ? 'A data de saída tem de ser após a data de chegada.' : 'Data/hora inválida.', 'error');
                 document.getElementById('rz-details').style.display = 'none';
                 return;
             }
@@ -197,20 +246,30 @@
         };
 
         selectRecurso.addEventListener('change', checkAvailabilityAndPrice);
-        inputInicio.addEventListener('change', checkAvailabilityAndPrice);
-        inputFim.addEventListener('change', checkAvailabilityAndPrice);
+        if (tipoNegocio === 'hotel') {
+            inputInicioData.addEventListener('change', checkAvailabilityAndPrice);
+            inputFimData.addEventListener('change', checkAvailabilityAndPrice);
+        } else {
+            inputInicioDatetime.addEventListener('change', checkAvailabilityAndPrice);
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const recursoId = selectRecurso.value;
-            const tInicio = new Date(inputInicio.value).toISOString();
-            const tFim = new Date(inputFim.value).toISOString();
+            const dates = getDates();
+            
+            if (!dates) {
+                showAlert('Por favor, preencha as datas.', 'error'); return;
+            }
+            
+            const tInicio = dates.start.toISOString();
+            const tFim = dates.end.toISOString();
             const nome = document.getElementById('rz-cliente-nome').value;
             const contacto = document.getElementById('rz-cliente-contacto').value;
 
             // Double check
-            if (new Date(tInicio) >= new Date(tFim)) {
+            if (dates.start >= dates.end) {
                 showAlert('Datas inválidas.', 'error'); return;
             }
 
