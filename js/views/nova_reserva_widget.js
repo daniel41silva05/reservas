@@ -54,10 +54,17 @@ export async function renderNovaReservaWidget(container, session) {
 
     // 2. Build the UI
     let html = `
+        <style>
+            #nr-calendar-container .fc-col-header-cell {
+                background-color: var(--surface-color) !important;
+            }
+            #nr-calendar-container .fc-col-header-cell-cushion {
+                color: var(--text-main) !important;
+            }
+        </style>
         <div class="glass-panel" style="padding: 1.5rem; width: 100%; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
                 <h3>Nova Reserva</h3>
-                <p class="text-sub" style="font-size: 0.85rem;">Insira uma reserva atuando como cliente usando o widget interno.</p>
             </div>
             
             <div id="nr-alert" style="padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none;"></div>
@@ -65,10 +72,10 @@ export async function renderNovaReservaWidget(container, session) {
             <form id="nr-form">
                 <!-- RECURSO -->
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Escolha o Recurso/Serviço</label>
+                    <label>${isHotel ? 'Escolha o Alojamento' : 'Escolha o Serviço'}</label>
                     <input type="hidden" id="nr-recurso" required value="">
                     <div class="custom-dropdown" id="nr-recurso-dropdown" style="width: 100%;">
-                        <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.9rem 1.2rem; ${recursos && recursos.length > 0 ? '' : 'opacity: 0.5; pointer-events: none;'}">
+                        <div class="custom-dropdown-selected" tabindex="0" style="background: var(--surface-color); border: var(--glass-border, 1px solid var(--border-color)); border-radius: 12px; padding: 0.9rem 1.2rem; ${recursos && recursos.length > 0 ? '' : 'opacity: 0.5; pointer-events: none;'}">
                             <i class="fa-solid fa-cube icon-left"></i>
                             <span class="selected-text" id="nr-recurso-text">Selecione uma opção...</span>
                             <i class="fa-solid fa-chevron-down icon-arrow"></i>
@@ -137,12 +144,17 @@ export async function renderNovaReservaWidget(container, session) {
                 <!-- DADOS DO CLIENTE -->
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label>Nome Cliente</label>
-                    <input type="text" id="nr-nome" class="form-control" required placeholder="Ex: João Silva">
+                    <input type="text" id="nr-nome" class="form-control" required>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Email</label>
+                    <input type="email" id="nr-email" class="form-control" required>
                 </div>
                 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label>Contacto (Tlm / Email)</label>
-                    <input type="text" id="nr-contacto" class="form-control" required placeholder="912345678 ou joao@email.com">
+                    <label>Telemóvel</label>
+                    <input type="text" id="nr-telemovel" class="form-control" required>
                 </div>
 
                 ${isHotel ? `
@@ -173,7 +185,7 @@ export async function renderNovaReservaWidget(container, session) {
             text-align: center;
             border: 1px solid rgba(255,255,255,0.15);
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        ">${isHotel ? 'Selecione o recurso, hora de check-in e check-out primeiro' : 'Selecione primeiro o Recurso/Serviço'}</div>
+        ">${isHotel ? 'Selecione o alojamento, hora de check-in e check-out primeiro' : 'Selecione primeiro o Serviço'}</div>
     `;
 
     container.innerHTML = html;
@@ -450,8 +462,8 @@ function setupWidgetListeners(empId, isHotel) {
                     const container = document.getElementById('nr-calendar-container');
                     if (!container) return;
                     container.querySelectorAll('.fc-col-header-cell, .fc-col-header, thead, thead td, thead th').forEach(el => {
-                        el.style.setProperty('background', 'transparent', 'important');
-                        el.style.setProperty('background-color', 'transparent', 'important');
+                        el.style.setProperty('background', 'var(--surface-color)', 'important');
+                        el.style.setProperty('background-color', 'var(--surface-color)', 'important');
                     });
                     container.querySelectorAll('.fc-col-header-cell-cushion').forEach(el => {
                         el.style.setProperty('color', 'var(--text-main, #e2e8f0)', 'important');
@@ -503,7 +515,7 @@ function setupWidgetListeners(empId, isHotel) {
 
                 select: function (info) {
                     if (!selectRecurso.value) {
-                        showAlert('Por favor selecione primeiro o Recurso/Serviço.');
+                        showAlert('Por favor selecione primeiro o Serviço.');
                         nrCalendar.unselect();
                         return;
                     }
@@ -916,7 +928,8 @@ function setupWidgetListeners(empId, isHotel) {
 
         const recursoId = selectRecurso.value;
         const nome = document.getElementById('nr-nome').value;
-        const contacto = document.getElementById('nr-contacto').value;
+        const email = document.getElementById('nr-email').value;
+        const telemovel = document.getElementById('nr-telemovel').value;
 
         if (!recursoId) { showAlert('Por favor selecione o recurso.'); return; }
 
@@ -986,7 +999,8 @@ function setupWidgetListeners(empId, isHotel) {
             empresa_id: empId,
             recurso_id: recursoId,
             cliente_nome: nome,
-            cliente_contacto: contacto,
+            cliente_email: email,
+            cliente_telemovel: telemovel,
             data_hora_inicio: inicioISO,
             data_hora_fim: fimISO,
             preco_final: precoCalculado || 0,

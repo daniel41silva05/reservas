@@ -136,8 +136,14 @@ export async function renderReservas(container, session) {
                             <input type="text" id="editResNome" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label>Contacto</label>
-                            <input type="text" id="editResContacto" class="form-control" required>
+                            <label>Email</label>
+                            <input type="email" id="editResEmail" class="form-control" required>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label>Telemóvel</label>
+                            <input type="text" id="editResTelemovel" class="form-control" required>
                         </div>
                     </div>
 
@@ -223,9 +229,9 @@ export async function renderReservas(container, session) {
             };
 
             html += `
-                <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_contacto)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
+                <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
-                    <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_contacto)}</small></td>
+                    <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}</small></td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
                     <td>${getStatusBadge(res.status)}</td>
@@ -234,7 +240,8 @@ export async function renderReservas(container, session) {
                             <button class="btn btn-secondary btn-edit-reserva" 
                             data-id="${res.id}" 
                             data-nome="${escapeHTML(res.cliente_nome)}" 
-                            data-contacto="${escapeHTML(res.cliente_contacto)}" 
+                            data-email="${escapeHTML(res.cliente_email)}" 
+                            data-telemovel="${escapeHTML(res.cliente_telemovel)}" 
                             data-inicio="${formatForInput(new Date(res.data_hora_inicio))}"
                             data-fim="${formatForInput(new Date(res.data_hora_fim))}"
                             data-preco="${parseFloat(res.preco_final) > 0 ? res.preco_final : ''}"
@@ -313,7 +320,8 @@ export async function renderReservas(container, session) {
                     borderColor: 'transparent',
                     extendedProps: {
                         status: r.status,
-                        contacto: r.cliente_contacto,
+                        email: r.cliente_email,
+                        telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome
                     }
@@ -367,8 +375,12 @@ export async function renderReservas(container, session) {
                                 <strong>Estado:</strong> ${escapeHTML(info.event.extendedProps.status)}
                             </li>
                             <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-envelope" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Email:</strong> ${escapeHTML(info.event.extendedProps.email)}
+                            </li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <i class="fa-solid fa-phone" style="color: var(--primary-color); width: 25px;"></i> 
-                                <strong>Contacto:</strong> ${escapeHTML(info.event.extendedProps.contacto)}
+                                <strong>Telemóvel:</strong> ${escapeHTML(info.event.extendedProps.telemovel)}
                             </li>
                             <li>
                                 <i class="fa-solid fa-money-bill" style="color: var(--primary-color); width: 25px;"></i> 
@@ -469,7 +481,8 @@ export async function renderReservas(container, session) {
             const b = e.currentTarget;
             document.getElementById('editReservaId').value = b.getAttribute('data-id');
             document.getElementById('editResNome').value = b.getAttribute('data-nome');
-            document.getElementById('editResContacto').value = b.getAttribute('data-contacto');
+            document.getElementById('editResEmail').value = b.getAttribute('data-email');
+            document.getElementById('editResTelemovel').value = b.getAttribute('data-telemovel');
             document.getElementById('editResPreco').value = b.getAttribute('data-preco');
 
             const statusVal = b.getAttribute('data-status');
@@ -519,7 +532,8 @@ export async function renderReservas(container, session) {
 
         const payload = {
             cliente_nome: document.getElementById('editResNome').value,
-            cliente_contacto: document.getElementById('editResContacto').value,
+            cliente_email: document.getElementById('editResEmail').value,
+            cliente_telemovel: document.getElementById('editResTelemovel').value,
             data_hora_inicio: dataInicio.toISOString(),
             data_hora_fim: dataFim.toISOString(),
             preco_final: document.getElementById('editResPreco').value || 0,
@@ -584,7 +598,7 @@ export async function renderReservas(container, session) {
         // Filter Calendar
         if (calendar) {
             const filteredEvents = reservas.filter(r => {
-                const cliente = (r.cliente_nome + ' ' + (r.cliente_contacto || '')).toLowerCase();
+                const cliente = (r.cliente_nome + ' ' + (r.cliente_email || '') + ' ' + (r.cliente_telemovel || '')).toLowerCase();
                 const recurso = r.recursos ? r.recursos.nome.toLowerCase() : '';
                 const estado = r.status.toLowerCase();
                 const reservaInicioTime = new Date(r.data_hora_inicio).getTime();
@@ -617,7 +631,8 @@ export async function renderReservas(container, session) {
                     borderColor: 'transparent',
                     extendedProps: {
                         status: r.status,
-                        contacto: r.cliente_contacto,
+                        email: r.cliente_email,
+                        telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome
                     }
