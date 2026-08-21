@@ -16,10 +16,8 @@
     const recursoFixoId = container.getAttribute('data-recurso-id'); // Opcional
 
     // Supabase Credentials (neste cenário de SaaS o cliente embute o widget, mas usa as tuas credenciais public para aceder à tua DB limitadamente via RLS)
-    const SUPABASE_URL = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_URL : 'SUA_URL_AQUI';
-    // O ideal será injetares a chave public dinamicamente ou tê-la num ficheiro config. Fica fixed por ser o widget distribuido.
-    // O PUBLIC KEY pode ser lido do supabase-config se estiver na mesma origem, senao é hardcoded:
-    const SUPABASE_ANON_KEY = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_ANON_KEY : 'YOUR_ANON_KEY_HERE'; // O user deverá substituir pelo ANON real ou providenciar. Para o MVP vamos importar se no memo serv ou carregar CDN.
+    const SUPABASE_URL = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_URL : 'https://pvwuubqqkcpqswhravpa.supabase.co';
+    const SUPABASE_ANON_KEY = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
 
     // Como é um widget, precisamos da lib do supabase. Vamos injetá-la se não existir.
     if (typeof window.supabase === 'undefined') {
@@ -31,11 +29,16 @@
         initWidget();
     }
 
+    // Descobrir a base URL do script atual para carregar o CSS do servidor correto (e não do cliente)
+    let baseUrl = 'https://daniel41silva05.github.io/reservas/widget/';
+    if (document.currentScript && document.currentScript.src) {
+        baseUrl = document.currentScript.src.split('?')[0].replace('widget.js', '');
+    }
+
     // Injetar CSS
     const styleLink = document.createElement('link');
     styleLink.rel = 'stylesheet';
-    // Em produção isto seria o link absoluto para o teu servidor (ex: https://teusite.com/widget/widget.css)
-    styleLink.href = './widget/widget.css';
+    styleLink.href = baseUrl + 'widget.css';
     document.head.appendChild(styleLink);
 
     let supabase;
