@@ -16,8 +16,8 @@
     const recursoFixoId = container.getAttribute('data-recurso-id'); // Opcional
 
     // Supabase Credentials (neste cenário de SaaS o cliente embute o widget, mas usa as tuas credenciais public para aceder à tua DB limitadamente via RLS)
-    const SUPABASE_URL = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_URL : 'https://pvwuubqqkcpqswhravpa.supabase.co';
-    const SUPABASE_ANON_KEY = typeof window.ENV !== 'undefined' ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
+    const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) ? window.ENV.SUPABASE_URL : 'https://pvwuubqqkcpqswhravpa.supabase.co';
+    const SUPABASE_ANON_KEY = (window.ENV && window.ENV.SUPABASE_ANON_KEY) ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
 
     // Como é um widget, precisamos da lib do supabase. Vamos injetá-la se não existir.
     if (typeof window.supabase === 'undefined') {
