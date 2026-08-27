@@ -244,6 +244,15 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
         cellEnd.setDate(cellEnd.getDate() + 1);
         const cellDateStr = cellDate.toISOString().split('T')[0];
 
+        // 0. Check if past date
+        if (isExternalWidget) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            if (cellDate < today) {
+                return { blocked: true, isCheckout: false, reason: 'past' };
+            }
+        }
+
         // 1. Check recurring blocks — if the weekday is entirely blocked
         const dayOfWeek = cellDate.getDay();
         const hasFullRecurringBlock = (window.nrRecurringBlocks || []).some(b => {
@@ -295,7 +304,6 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             nrCalendar = new window.FullCalendar.Calendar(calEl, {
                 initialView: 'dayGridMonth',
                 locale: 'pt',
-                validRange: isExternalWidget ? { start: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })() } : undefined,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -308,9 +316,10 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 dayCellContent: function (arg) {
                     const text = arg.dayNumberText;
                     const cellDate = new Date(arg.date.getFullYear(), arg.date.getMonth(), arg.date.getDate());
-                    const { blocked } = isDayBlockedForHotel(cellDate);
+                    const { blocked, reason } = isDayBlockedForHotel(cellDate);
 
                     if (blocked) {
+                        if (reason === 'past') return { html: '' };
                         return { html: `<div class="fc-daygrid-day-number">${text}</div>` };
                     }
 
@@ -341,7 +350,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 // Apply blocked styling to cells after mount
                 dayCellDidMount: function (arg) {
                     const cellDate = new Date(arg.date.getFullYear(), arg.date.getMonth(), arg.date.getDate());
-                    const { blocked } = isDayBlockedForHotel(cellDate);
+                    const { blocked, reason } = isDayBlockedForHotel(cellDate);
                     if (blocked) {
                         arg.el.classList.add('nr-day-blocked');
                         arg.el.title = 'Indisponível';
@@ -364,10 +373,12 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                             numEl.style.color = 'rgba(239,68,68,0.7)';
                         }
                         // Add small unavailable badge
-                        const badge = document.createElement('div');
-                        badge.className = 'nr-blocked-badge';
-                        badge.innerHTML = '<i class="fa-solid fa-ban"></i>';
-                        arg.el.querySelector('.fc-daygrid-day-frame')?.appendChild(badge);
+                        if (reason !== 'past') {
+                            const badge = document.createElement('div');
+                            badge.className = 'nr-blocked-badge';
+                            badge.innerHTML = '<i class="fa-solid fa-ban"></i>';
+                            arg.el.querySelector('.fc-daygrid-day-frame')?.appendChild(badge);
+                        }
                     } else {
                         arg.el.style.cursor = 'pointer';
                         arg.el.classList.add('nr-day-available');
