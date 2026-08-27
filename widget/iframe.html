@@ -99,7 +99,8 @@
         // Setup mock dashboard context for nova_reserva_widget.js
         window.dashboardContext = {
             currentEmpresaId: empresaId,
-            currentEmpresaTipo: tipo
+            currentEmpresaTipo: tipo,
+            isExternalWidget: true
         };
 
         // Initialize Supabase
@@ -107,13 +108,17 @@
         const key = (window.ENV && window.ENV.SUPABASE_ANON_KEY) ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
         window.supabase = window.supabase.createClient(url, key);
 
-        // ResizeObserver to send height to parent widget.js
         const resizeObserver = new ResizeObserver((entries) => {
             if (!entries || entries.length === 0) return;
-            const height = document.body.scrollHeight;
-            window.parent.postMessage({ type: 'resize', height: height }, '*');
+            const root = document.getElementById('root');
+            if (root) {
+                const height = root.offsetHeight;
+                window.parent.postMessage({ type: 'resize', height: height + 20 }, '*');
+            }
         });
-        resizeObserver.observe(document.body);
+        document.addEventListener('DOMContentLoaded', () => {
+            resizeObserver.observe(document.getElementById('root'));
+        });
     </script>
 
     <!-- Load the exact widget from the dashboard -->
@@ -178,7 +183,8 @@
                 
                 // Force an initial resize message just in case
                 setTimeout(() => {
-                    window.parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+                    const root = document.getElementById('root');
+                    if (root) window.parent.postMessage({ type: 'resize', height: root.offsetHeight + 20 }, '*');
                 }, 500);
 
             } catch (err) {

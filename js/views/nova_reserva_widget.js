@@ -2,6 +2,7 @@ export async function renderNovaReservaWidget(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
     const isHotel = window.dashboardContext.currentEmpresaTipo &&
         window.dashboardContext.currentEmpresaTipo.toLowerCase() === 'hotel';
+    const isExternalWidget = window.dashboardContext.isExternalWidget === true;
 
     if (!empId) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; text-align: center;"><p class="text-sub">Por favor, escolha ou crie uma empresa primeiro.</p></div>`;
@@ -190,10 +191,10 @@ export async function renderNovaReservaWidget(container, session) {
 
     container.innerHTML = html;
 
-    setupWidgetListeners(empId, isHotel);
+    setupWidgetListeners(empId, isHotel, isExternalWidget);
 }
 
-function setupWidgetListeners(empId, isHotel) {
+function setupWidgetListeners(empId, isHotel, isExternalWidget) {
     const form = document.getElementById('nr-form');
     const inputInicio = document.getElementById('nr-inicio');
     const inputFim = document.getElementById('nr-fim');
@@ -294,6 +295,7 @@ function setupWidgetListeners(empId, isHotel) {
             nrCalendar = new window.FullCalendar.Calendar(calEl, {
                 initialView: 'dayGridMonth',
                 locale: 'pt',
+                validRange: isExternalWidget ? { start: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })() } : undefined,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -441,6 +443,7 @@ function setupWidgetListeners(empId, isHotel) {
             nrCalendar = new window.FullCalendar.Calendar(calEl, {
                 initialView: 'timeGridDay',
                 locale: 'pt',
+                validRange: isExternalWidget ? { start: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })() } : undefined,
                 slotLabelFormat: { hour: 'numeric', minute: '2-digit', omitZeroMinute: false, meridiem: false, separator: 'h' },
                 eventTimeFormat: { hour: 'numeric', minute: '2-digit', omitZeroMinute: false, meridiem: false, separator: 'h' },
                 headerToolbar: {
@@ -1020,7 +1023,7 @@ function setupWidgetListeners(empId, isHotel) {
                     <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
                     <h4>Reserva Submetida!</h4>
                     <p class="text-sub">Ficará pendente nos registos para revisão.</p>
-                    <button class="btn btn-primary" onclick="document.querySelector('[data-view=\\'reservas\\']').click()" style="margin-top: 1.5rem;">Ver Reservas</button>
+                    ${!isExternalWidget ? '<button class="btn btn-primary" onclick="document.querySelector(\'[data-view=\\\'reservas\\\']\').click()" style="margin-top: 1.5rem;">Ver Reservas</button>' : ''}
                 </div>
             `;
         }
