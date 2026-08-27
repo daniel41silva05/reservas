@@ -62,7 +62,19 @@
 
         if (color) {
             document.documentElement.style.setProperty('--primary-color', color);
-            document.documentElement.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${color} 0%, var(--secondary-color) 100%)`);
+            document.documentElement.style.setProperty('--gradient-primary', `linear-gradient(135deg, ${color} 0%, ${color} 100%)`);
+            
+            // Convert to RGB for shadows and outlines
+            const getRGB = (c) => {
+                let el = document.createElement('div');
+                el.style.color = c;
+                document.body.appendChild(el);
+                let comp = window.getComputedStyle(el).color;
+                document.body.removeChild(el);
+                let match = comp.match(/\d+/g);
+                return match ? match.slice(0,3).join(', ') : '59, 130, 246';
+            };
+            document.documentElement.style.setProperty('--primary-color-rgb', getRGB(color));
         }
         
         if (theme === 'light') {

@@ -79,14 +79,14 @@
 }
 
 .sidebar-nav li:hover {
-    background: rgba(59, 130, 246, 0.05);
+    background: rgba(var(--primary-color-rgb), 0.05);
     /* Slight blue tint on hover */
     color: var(--text-main);
     transform: translateX(5px);
 }
 
 .sidebar-nav li.active {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.15) 0%, transparent 100%);
     color: var(--primary-color);
     border-left-color: var(--primary-color);
 }
@@ -223,9 +223,9 @@
 }
 
 .badge-primary {
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(var(--primary-color-rgb), 0.15);
     color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.3);
 }
 
 /* Custom Admin Dropdown (replacing native select) */
@@ -242,7 +242,7 @@
     border-radius: 99px;
     background: rgba(11, 15, 25, 0.6);
     color: var(--text-main);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.3);
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -252,9 +252,9 @@
 
 .custom-dropdown-selected:hover,
 .custom-dropdown.open .custom-dropdown-selected {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: rgba(var(--primary-color-rgb), 0.1);
     border-color: var(--primary-color);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.2);
 }
 
 .custom-dropdown-selected .icon-left {
@@ -320,13 +320,13 @@
 }
 
 .custom-option:hover {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(var(--primary-color-rgb), 0.1);
     color: var(--primary-color);
     padding-left: 1.5rem;
 }
 
 .custom-option.active {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(var(--primary-color-rgb), 0.2);
     color: var(--text-main);
     font-weight: 600;
 }
@@ -366,7 +366,7 @@
 }
 
 .fc-day-today {
-    background: rgba(59, 130, 246, 0.05) !important;
+    background: rgba(var(--primary-color-rgb), 0.05) !important;
 }
 
 .fc .fc-button-primary {
@@ -401,7 +401,7 @@
 }
 
 .option-card:hover {
-    border-color: rgba(59, 130, 246, 0.5);
+    border-color: rgba(var(--primary-color-rgb), 0.5);
     background: var(--surface-hover);
     transform: translateY(-2px);
 }
@@ -504,7 +504,7 @@ input[type="date"].form-control {
 
 input[type="date"].form-control:focus {
     border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2) !important;
     background: var(--surface-hover) !important;
 }
 
@@ -540,7 +540,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .flatpickr-calendar .flatpickr-day:hover,
 .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
 .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
-    background: rgba(59, 130, 246, 0.1) !important;
+    background: rgba(var(--primary-color-rgb), 0.1) !important;
     border-color: var(--primary-color) !important;
 }
 
@@ -548,7 +548,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     background: var(--primary-color) !important;
     color: white !important;
     border-color: var(--primary-color) !important;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 4px 10px rgba(var(--primary-color-rgb), 0.4) !important;
 }
 
 /* Number Inputs Aesthetic Improvements */
@@ -685,4 +685,4 @@ input[type="number"].form-control {
 #nr-cal-tooltip {
     z-index: 99999 !important;
 }
-
+
