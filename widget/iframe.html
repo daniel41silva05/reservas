@@ -25,14 +25,15 @@
             background-color: transparent !important;
             padding: 0;
             margin: 0;
-            overflow-x: hidden; /* Avoid overflow: hidden on both axes for iOS touch */
+            /* Prevent Chrome Mobile touch/click issues inside iframes by avoiding overflow-x: hidden */
+            overflow-x: clip !important;
         }
         /* Make sure glass panels span full width */
         #root {
             padding: 10px;
             box-sizing: border-box;
             max-width: 100vw;
-            overflow-x: hidden;
+            overflow-x: clip !important;
         }
     </style>
 </head>
