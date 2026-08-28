@@ -208,7 +208,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }, { passive: true });
     }
+
+    // ── Mobile Sidebar Toggle ──────────────────────────────────────
+    const sidebarToggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        if (sidebarOverlay) {
+            sidebarOverlay.style.display = 'block';
+        }
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        if (sidebarOverlay) {
+            sidebarOverlay.style.display = 'none';
+        }
+        document.body.style.overflow = '';
+    }
+
+    if (sidebarToggleBtn) {
+        sidebarToggleBtn.addEventListener('click', () => {
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when a nav item is clicked on mobile
+    document.querySelectorAll('#navLinks li').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
 });
+
 
 function escapeHTML(str) {
     if (!str) return '';
@@ -256,13 +301,14 @@ async function loadView(view, session) {
     }
 }
 
-window.showConfirmModal = function (title, message, isAlert = false) {
+window.showConfirmModal = function (title, message, isAlert = false, confirmText = 'Apagar', type = 'danger') {
     return new Promise((resolve) => {
         const modal = document.getElementById('globalConfirmModal');
         const titleEl = document.getElementById('confirmModalTitle');
         const messageEl = document.getElementById('confirmModalMessage');
         const btnAccept = document.getElementById('btnConfirmAccept');
         const btnCancel = document.getElementById('btnConfirmCancel');
+        const iconEl = modal ? modal.querySelector('.modal-icon i') : null;
 
         if (!modal) {
             if (isAlert) {
@@ -277,6 +323,25 @@ window.showConfirmModal = function (title, message, isAlert = false) {
         titleEl.textContent = title || 'Confirmação';
         messageEl.textContent = message || (isAlert ? '' : 'Tem a certeza que deseja prosseguir?');
 
+        if (iconEl) {
+            if (isAlert) {
+                iconEl.className = 'fa-solid fa-circle-info';
+                iconEl.style.color = 'var(--primary-color)';
+            } else if (type === 'danger') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+                iconEl.style.color = '#ef4444';
+            } else if (type === 'success') {
+                iconEl.className = 'fa-solid fa-circle-check';
+                iconEl.style.color = '#22c55e';
+            } else if (type === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+                iconEl.style.color = '#f59e0b';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-question';
+                iconEl.style.color = 'var(--primary-color)';
+            }
+        }
+
         if (isAlert) {
             btnCancel.style.display = 'none';
             btnAccept.textContent = 'OK';
@@ -284,9 +349,17 @@ window.showConfirmModal = function (title, message, isAlert = false) {
             btnAccept.style = '';
         } else {
             btnCancel.style.display = 'block';
-            btnAccept.textContent = 'Apagar';
+            btnAccept.textContent = confirmText;
             btnAccept.className = 'btn btn-primary';
-            btnAccept.style = 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);';
+            if (type === 'danger') {
+                btnAccept.style = 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);';
+            } else if (type === 'success') {
+                btnAccept.style = 'background: rgba(34, 197, 94, 0.15); color: #22c55e; border-color: rgba(34, 197, 94, 0.3);';
+            } else if (type === 'warning') {
+                btnAccept.style = 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);';
+            } else {
+                btnAccept.style = '';
+            }
         }
 
         modal.classList.remove('hidden');

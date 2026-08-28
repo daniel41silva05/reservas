@@ -247,7 +247,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
         // 0. Check if past date
         if (isExternalWidget) {
             const today = new Date();
-            today.setHours(0,0,0,0);
+            today.setHours(0, 0, 0, 0);
             if (cellDate < today) {
                 return { blocked: true, isCheckout: false, reason: 'past' };
             }
@@ -454,7 +454,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             nrCalendar = new window.FullCalendar.Calendar(calEl, {
                 initialView: 'timeGridDay',
                 locale: 'pt',
-                validRange: isExternalWidget ? { start: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })() } : undefined,
+                validRange: isExternalWidget ? { start: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })() } : undefined,
                 slotLabelFormat: { hour: 'numeric', minute: '2-digit', omitZeroMinute: false, meridiem: false, separator: 'h' },
                 eventTimeFormat: { hour: 'numeric', minute: '2-digit', omitZeroMinute: false, meridiem: false, separator: 'h' },
                 headerToolbar: {
@@ -470,9 +470,11 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 allDaySlot: false,
                 slotDuration: initialSlotStr,
                 snapDuration: initialSlotStr,
+                selectLongPressDelay: 50,
+                longPressDelay: 50,
 
                 // Fix column header background via JS after render
-                viewDidMount: function() {
+                viewDidMount: function () {
                     const container = document.getElementById('nr-calendar-container');
                     if (!container) return;
                     container.querySelectorAll('.fc-col-header-cell, .fc-col-header, thead, thead td, thead th').forEach(el => {
@@ -486,7 +488,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 },
 
                 // Control rendering for mirror (selection) and unavailable slot events
-                eventContent: function(arg) {
+                eventContent: function (arg) {
                     const fmt = (d) => d
                         ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
                         : '';
@@ -511,7 +513,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 },
 
                 // Apply stripe background only to unavailable slots (not to mirror)
-                eventDidMount: function(info) {
+                eventDidMount: function (info) {
                     if (!info.event.classNames || !info.event.classNames.includes('nr-unavailable-slot')) return;
                     const el = info.el;
                     el.style.cursor = 'default';
@@ -525,6 +527,26 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 selectAllow: function (selectInfo) {
                     if (!selectRecurso.value) return false;
                     return true;
+                },
+
+                dateClick: function (info) {
+                    if (!selectRecurso.value) {
+                        showAlert('Por favor selecione primeiro o Serviço.');
+                        return;
+                    }
+
+                    hideAlert();
+
+                    const durationMin = parseInt(document.getElementById('nr-duracao').value) || 60;
+                    const startDate = new Date(info.date);
+                    const endDate = new Date(startDate.getTime() + durationMin * 60 * 1000);
+
+                    inputInicio.value = formatDateTimeLocal(startDate);
+                    inputFim.value = endDate.toISOString();
+
+                    if (nrCalendar) {
+                        nrCalendar.select(startDate, endDate);
+                    }
                 },
 
                 select: function (info) {

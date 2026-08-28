@@ -53,6 +53,12 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="topbar">
+                <div class="topbar-left">
+                    <button id="sidebarToggle" class="btn-icon sidebar-toggle-btn" title="Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <span class="topbar-brand">Sistema<span>.</span></span>
+                </div>
                 <div class="topbar-right">
                     <div id="companyContextWrapper" class="company-context hidden">
                         <!-- Selector for Admin, Text for owner -->
@@ -73,6 +79,9 @@
                 </div>
             </div>
         </main>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
     </div>
 
     <!-- Global Confirm Modal -->

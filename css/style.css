@@ -391,3 +391,51 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ──────────────────────────────────────────
+   Mobile Responsive — Login Page (≤ 768px)
+   ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .auth-header p {
+    font-size: 0.9rem;
+  }
+
+  /* Sign-up row: wrap nicely on small screens */
+  .text-sub[style*="display: flex"] {
+    flex-direction: column;
+    gap: 0.75rem !important;
+    text-align: center;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-wrapper {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .form-control {
+    padding: 0.8rem 1rem;
+  }
+}
+

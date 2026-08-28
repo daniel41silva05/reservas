@@ -404,7 +404,10 @@ export async function renderReservas(container, session) {
             const btnEl = e.currentTarget;
             const id = btnEl.getAttribute('data-id');
             const action = btnEl.getAttribute('data-action');
-            const confirmado = await window.showConfirmModal('Atualizar Reserva', 'Atualizar reserva para: ' + action.toUpperCase() + '?');
+            const isConfirmada = action === 'confirmada';
+            const btnText = isConfirmada ? 'Confirmar' : 'Reverter';
+            const btnType = isConfirmada ? 'success' : 'warning';
+            const confirmado = await window.showConfirmModal('Atualizar Reserva', 'Atualizar reserva para: ' + action.toUpperCase() + '?', false, btnText, btnType);
             if (confirmado) {
                 btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 const { error } = await window.supabase.from('reservas').update({ status: action }).eq('id', id);
