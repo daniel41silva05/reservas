@@ -66,6 +66,7 @@ export async function renderNovaReservaWidget(container, session) {
                 #nr-calendar-container .fc-view-harness {
                     overflow-x: auto !important;
                     -webkit-overflow-scrolling: touch;
+                    width: 100%;
                 }
                 #nr-calendar-container .fc-scrollgrid {
                     min-width: 600px !important;
@@ -147,8 +148,8 @@ export async function renderNovaReservaWidget(container, session) {
                 </div>
 
                 <!-- CALENDÁRIO -->
-                <div class="form-group" style="margin-bottom: 1rem; position: relative;">
-                    <div id="nr-calendar-container" style="background: var(--glass-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 400px;"></div>
+                <div class="form-group" style="margin-bottom: 1rem; position: relative; max-width: 100%; overflow-x: hidden;">
+                    <div id="nr-calendar-container" style="background: var(--glass-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 400px; max-width: 100%; overflow-x: hidden;"></div>
                 </div>
 
                 <!-- DADOS DO CLIENTE -->
