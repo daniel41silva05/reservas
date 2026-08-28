@@ -8,12 +8,12 @@ export async function renderPerfil(container, session) {
 
             <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color);">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">
+                    <div style="width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">
                         ${session.user.email.charAt(0).toUpperCase()}
                     </div>
-                    <div>
+                    <div style="min-width: 0; flex: 1;">
                         <p style="margin: 0; font-size: 0.85rem;" class="text-sub">E-mail associado à conta:</p>
-                        <p style="margin: 0; font-weight: bold; font-size: 1.1rem;">${escapeHTML(session.user.email)}</p>
+                        <p style="margin: 0; font-weight: bold; font-size: 1.1rem; word-break: break-all;">${escapeHTML(session.user.email)}</p>
                     </div>
                 </div>
             </div>
