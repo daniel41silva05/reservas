@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Configurar o UI do user
     document.getElementById('userEmail').textContent = session.user.email;
+    document.getElementById('userEmail').addEventListener('click', () => {
+        document.querySelector('li[data-view="perfil"]').click();
+    });
 
     // Listeners do UI
     document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -289,6 +292,13 @@ async function loadView(view, session) {
             break;
         case 'reservas':
             await renderReservas(contentArea, session);
+            break;
+        case 'perfil':
+            import('./views/perfil.js').then(module => {
+                module.renderPerfil(contentArea, session);
+            }).catch(err => {
+                contentArea.innerHTML = `<div class="glass-panel" style="padding: 2rem; color: var(--danger);">Ocorreu um erro a carregar o perfil: ${err.message}</div>`;
+            });
             break;
         case 'nova_reserva':
             // We can delegate this to a module if we extract it, or render inline
