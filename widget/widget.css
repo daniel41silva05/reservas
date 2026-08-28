@@ -35,6 +35,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    transform: translate3d(0, 0, 0);
 }
 
 .rz-widget-header {
