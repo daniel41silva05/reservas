@@ -62,6 +62,15 @@ export async function renderNovaReservaWidget(container, session) {
             #nr-calendar-container .fc-col-header-cell-cushion {
                 color: var(--text-main) !important;
             }
+            @media (max-width: 768px) {
+                #nr-calendar-container .fc-view-harness {
+                    overflow-x: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                }
+                #nr-calendar-container .fc-scrollgrid {
+                    min-width: 600px !important;
+                }
+            }
         </style>
         <div class="glass-panel" style="padding: 1.5rem; width: 100%; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">

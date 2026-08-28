@@ -841,6 +841,15 @@ input[type="number"].form-control {
         font-size: 0.8rem !important;
     }
 
+    .fc .fc-view-harness {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .fc .fc-scrollgrid {
+        min-width: 600px !important;
+    }
+
     /* Topbar right gap smaller */
     .topbar-right {
         gap: 0.75rem;
