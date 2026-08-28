@@ -29,6 +29,9 @@
             margin: 0;
             /* overflow-x: hidden preserva touch events em mobile (clip bloqueia-os) */
             overflow-x: hidden;
+            /* Garante que os eventos de toque são entregues aos elementos filhos */
+            touch-action: pan-y;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Make sure glass panels span full width */
@@ -37,8 +40,11 @@
             box-sizing: border-box;
             max-width: 100vw;
             overflow-x: hidden;
+            /* Necessário em iOS para que inputs e botões dentro do iframe sejam clicáveis */
+            touch-action: pan-y;
         }
     </style>
+
 </head>
 
 <body class="dark-theme">
