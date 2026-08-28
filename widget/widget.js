@@ -37,9 +37,7 @@
 
     const iframe = document.createElement('iframe');
     iframe.src = `${baseUrl}widget/iframe.html?${qs.toString()}`;
-    iframe.style.width = '1px';
-    iframe.style.minWidth = '100%';
-    iframe.style.maxWidth = '100%';
+    iframe.style.width = '100%';
     iframe.style.height = '650px'; // Altura inicial conservadora
     iframe.style.border = 'none';
     iframe.style.borderRadius = '16px';
