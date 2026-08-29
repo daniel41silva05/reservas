@@ -120,7 +120,13 @@
         // Initialize Supabase
         const url = (window.ENV && window.ENV.SUPABASE_URL) ? window.ENV.SUPABASE_URL : 'https://pvwuubqqkcpqswhravpa.supabase.co';
         const key = (window.ENV && window.ENV.SUPABASE_ANON_KEY) ? window.ENV.SUPABASE_ANON_KEY : 'sb_publishable_vOPnCm5-b3HyhflNCWqg7w_HiVQihU6';
-        window.supabase = window.supabase.createClient(url, key);
+        window.supabase = window.supabase.createClient(url, key, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false
+            }
+        });
 
         const resizeObserver = new ResizeObserver((entries) => {
             if (!entries || entries.length === 0) return;
