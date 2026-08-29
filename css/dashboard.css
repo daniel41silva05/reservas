@@ -315,10 +315,10 @@
     right: 0;
     width: 100%;
     min-width: 100%;
-    background: var(--glass-bg, rgba(26, 34, 53, 0.95));
+    background: var(--surface-color, rgba(26, 34, 53, 0.95));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border-color, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--surface-hover, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     overflow: hidden;
@@ -551,10 +551,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Flatpickr Custom Aesthetic Overrides */
 .flatpickr-calendar {
-    background: var(--glass-bg, rgba(26, 34, 53, 0.95)) !important;
+    background: var(--surface-color, rgba(26, 34, 53, 0.95)) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
-    border: 1px solid var(--glass-border-color, rgba(255, 255, 255, 0.1)) !important;
+    border: 1px solid var(--surface-hover, rgba(255, 255, 255, 0.1)) !important;
     border-radius: 16px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
     color: var(--text-main) !important;
