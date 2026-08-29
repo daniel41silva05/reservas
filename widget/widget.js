@@ -36,7 +36,7 @@
     });
 
     const iframe = document.createElement('iframe');
-    iframe.src = `${baseUrl}widget/iframe.html?${qs.toString()}`;
+    iframe.src = `${baseUrl}widget/iframe.html?v=2&${qs.toString()}`;
     iframe.style.width = '100%';
     iframe.style.height = '650px'; // Altura inicial conservadora
     iframe.style.border = 'none';
