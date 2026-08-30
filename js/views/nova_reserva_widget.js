@@ -103,14 +103,14 @@ export async function renderNovaReservaWidget(container, session) {
                 <!-- HOTEL: Horas Check-in / Check-out -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group">
-                        <label><i class="fa-solid fa-right-to-bracket" style="color: var(--success); margin-right: 6px;"></i>Hora de Check-in</label>
+                        <label style="white-space: nowrap; font-size: clamp(0.7rem, 3.5vw, 0.9rem);"><i class="fa-solid fa-right-to-bracket" style="color: var(--success); margin-right: 6px;"></i>Hora de Check-in</label>
                         <select id="nr-hora-checkin" class="form-control" style="cursor: pointer;">
                             <option value="">-- Selecione --</option>
                             ${generateTimeOptions('14:00')}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label><i class="fa-solid fa-right-from-bracket" style="color: var(--danger); margin-right: 6px;"></i>Hora de Check-out</label>
+                        <label style="white-space: nowrap; font-size: clamp(0.7rem, 3.5vw, 0.9rem);"><i class="fa-solid fa-right-from-bracket" style="color: var(--danger); margin-right: 6px;"></i>Hora de Check-out</label>
                         <select id="nr-hora-checkout" class="form-control" style="cursor: pointer;">
                             <option value="">-- Selecione --</option>
                             ${generateTimeOptions('11:00')}
@@ -130,7 +130,7 @@ export async function renderNovaReservaWidget(container, session) {
                 <!-- DATA(S) SELECIONADA(S) - exibição readonly -->
                 <div style="display: grid; grid-template-columns: ${isHotel ? '1fr 1fr' : '1fr'}; gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group">
-                        <label>${isHotel ? 'Data Check-in' : 'Data/Hora de Início'}</label>
+                        <label style="white-space: nowrap; font-size: clamp(0.7rem, 3.5vw, 0.9rem);">${isHotel ? 'Data Check-in' : 'Data/Hora de Início'}</label>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input type="text" id="nr-inicio" class="form-control" required readonly placeholder="Selecione no calendário">
                             <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>
@@ -138,7 +138,7 @@ export async function renderNovaReservaWidget(container, session) {
                     </div>
                     ${isHotel ? `
                     <div class="form-group">
-                        <label>Data Check-out</label>
+                        <label style="white-space: nowrap; font-size: clamp(0.7rem, 3.5vw, 0.9rem);">Data Check-out</label>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input type="text" id="nr-fim" class="form-control" required readonly placeholder="Selecione no calendário">
                             <i class="fa-regular fa-calendar" style="position: absolute; right: 15px; color: var(--text-muted); pointer-events: none; font-size: 1.1rem;"></i>

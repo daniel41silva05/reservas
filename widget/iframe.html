@@ -163,6 +163,8 @@
                             if (dd) {
                                 dd.style.pointerEvents = 'none';
                                 dd.style.opacity = '0.7';
+                                const arrow = dd.querySelector('.icon-arrow');
+                                if (arrow) arrow.style.display = 'none';
                             }
                         }
                     }
@@ -180,6 +182,8 @@
                         ciEl.value = ci;
                         ciEl.style.pointerEvents = 'none';
                         ciEl.style.opacity = '0.7';
+                        ciEl.style.appearance = 'none';
+                        ciEl.style.webkitAppearance = 'none';
                     }
                 }
 
@@ -189,6 +193,8 @@
                         coEl.value = co;
                         coEl.style.pointerEvents = 'none';
                         coEl.style.opacity = '0.7';
+                        coEl.style.appearance = 'none';
+                        coEl.style.webkitAppearance = 'none';
                     }
                 }
 
@@ -198,6 +204,8 @@
                         durEl.value = dur;
                         durEl.style.pointerEvents = 'none';
                         durEl.style.opacity = '0.7';
+                        durEl.style.appearance = 'none';
+                        durEl.style.webkitAppearance = 'none';
                     }
                 }
 
