@@ -228,9 +228,16 @@ export async function renderReservas(container, session) {
                 return off.replace('T', ' ');
             };
 
+            let extrasHtmlList = '';
+            if (res.extras_selecionados && Array.isArray(res.extras_selecionados) && res.extras_selecionados.length > 0) {
+                extrasHtmlList = `<div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.1); padding: 0.3rem 0.5rem; border-radius: 4px; display: inline-block;">`;
+                extrasHtmlList += `<strong>Extras:</strong> ` + res.extras_selecionados.map(e => `${escapeHTML(e.titulo)} (${escapeHTML(e.tipo)})`).join(', ');
+                extrasHtmlList += `</div>`;
+            }
+
             html += `
                 <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
-                    <td><strong>${escapeHTML(recursoNome)}</strong></td>
+                    <td><strong>${escapeHTML(recursoNome)}</strong><br>${extrasHtmlList}</td>
                     <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}</small></td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
@@ -323,7 +330,8 @@ export async function renderReservas(container, session) {
                         email: r.cliente_email,
                         telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
-                        recursoNome: r.recursos?.nome
+                        recursoNome: r.recursos?.nome,
+                        extras: r.extras_selecionados
                     }
                 };
             });
@@ -382,10 +390,16 @@ export async function renderReservas(container, session) {
                                 <i class="fa-solid fa-phone" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Telemóvel:</strong> ${escapeHTML(info.event.extendedProps.telemovel)}
                             </li>
-                            <li>
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <i class="fa-solid fa-money-bill" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Preço:</strong> ${price}
                             </li>
+                            ${info.event.extendedProps.extras && info.event.extendedProps.extras.length > 0 ? `
+                            <li>
+                                <i class="fa-solid fa-star" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Extras:</strong> ${info.event.extendedProps.extras.map(e => `${escapeHTML(e.titulo)} (${escapeHTML(e.tipo)})`).join(', ')}
+                            </li>
+                            ` : ''}
                         </ul>
                     `;
                     window.showInfoModal('Detalhes da Reserva', html);

@@ -3,6 +3,7 @@ import { renderRecursos } from './views/recursos.js';
 import { renderPrecos } from './views/precos.js';
 import { renderBloqueios } from './views/bloqueios.js';
 import { renderReservas } from './views/reservas.js';
+import { renderExtras } from './views/extras.js';
 
 window.dashboardContext = {
     isAdmin: false,
@@ -162,17 +163,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateUIBasedOnTipo() {
         const tipo = window.dashboardContext.currentEmpresaTipo ? window.dashboardContext.currentEmpresaTipo.toLowerCase() : '';
         const navPrecos = document.querySelector('li[data-view="precos"]');
+        const navExtras = document.querySelector('li[data-view="extras"]');
         if (navPrecos) {
             if (tipo === 'hotel') {
                 navPrecos.classList.remove('hidden-by-type');
                 navPrecos.style.display = 'flex';
+                if(navExtras) {
+                    navExtras.classList.remove('hidden-by-type');
+                    navExtras.style.display = 'flex';
+                }
             } else {
                 navPrecos.classList.add('hidden-by-type');
                 navPrecos.style.display = 'none';
+                if(navExtras) {
+                    navExtras.classList.add('hidden-by-type');
+                    navExtras.style.display = 'none';
+                }
 
-                // Redirect if currently on precos
+                // Redirect if currently on precos or extras
                 const activeNav = document.querySelector('#navLinks li.active');
-                if (activeNav && activeNav.getAttribute('data-view') === 'precos') {
+                if (activeNav && (activeNav.getAttribute('data-view') === 'precos' || activeNav.getAttribute('data-view') === 'extras')) {
                     document.querySelector('#navLinks li[data-view="recursos"]').click();
                 }
             }
@@ -286,6 +296,9 @@ async function loadView(view, session) {
             break;
         case 'precos':
             await renderPrecos(contentArea, session);
+            break;
+        case 'extras':
+            await renderExtras(contentArea, session);
             break;
         case 'bloqueios':
             await renderBloqueios(contentArea, session);

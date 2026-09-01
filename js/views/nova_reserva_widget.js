@@ -152,6 +152,14 @@ export async function renderNovaReservaWidget(container, session) {
                     <div id="nr-calendar-container" style="background: var(--glass-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 400px; max-width: 100%; overflow-x: clip;"></div>
                 </div>
 
+                <!-- EXTRAS (Hotel Only) -->
+                ${isHotel ? `
+                <div id="nr-extras-section" style="display: none; margin-bottom: 1.5rem;">
+                    <h5 style="margin-bottom: 0.75rem; color: var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Extras Adicionais</h5>
+                    <div id="nr-extras-container" style="display: grid; gap: 1rem;"></div>
+                </div>
+                ` : ''}
+
                 <!-- DADOS DO CLIENTE -->
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label>Nome Cliente</label>
@@ -666,13 +674,19 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             .select('dia_semana, hora_inicio, hora_fim')
             .eq('recurso_id', recursoId);
 
-        // Fetch prices (hotel only)
+        // Fetch prices and extras (hotel only)
         if (isHotel) {
             const { data: precos } = await window.supabase
                 .from('precos')
                 .select('preco_base, data_inicio, data_fim')
                 .eq('recurso_id', recursoId);
             window.currentResourcePrices = precos || [];
+
+            const { data: extrasData } = await window.supabase
+                .from('extras')
+                .select('*')
+                .eq('recurso_id', recursoId);
+            renderExtrasOptions(extrasData);
         }
 
         // Store recurring blocks globally
@@ -829,6 +843,51 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
         });
     }
 
+    // ─── Extras Rendering ──────────────────────────────────────────────────────
+    function renderExtrasOptions(extrasData) {
+        const section = document.getElementById('nr-extras-section');
+        const container = document.getElementById('nr-extras-container');
+        if (!extrasData || extrasData.length === 0) {
+            section.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+
+        const grouped = {};
+        extrasData.forEach(ex => {
+            if (!grouped[ex.titulo]) grouped[ex.titulo] = [];
+            grouped[ex.titulo].push(ex);
+        });
+
+        let html = '';
+        for (const [titulo, opcoes] of Object.entries(grouped)) {
+            html += `<div class="extra-group" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.1);">
+                <strong style="display: block; margin-bottom: 0.5rem;">${escapeHTML(titulo)}</strong>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                        <input type="radio" name="extra_${escapeHTML(titulo)}" value="" data-preco="0" data-tipo="" checked style="accent-color: var(--primary-color);">
+                        <span>Nenhum</span>
+                    </label>
+            `;
+            opcoes.forEach(op => {
+                html += `
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                        <input type="radio" name="extra_${escapeHTML(titulo)}" value="${escapeHTML(op.titulo)}" data-preco="${op.preco}" data-tipo="${escapeHTML(op.tipo)}" style="accent-color: var(--primary-color);">
+                        <span>${escapeHTML(op.tipo)} (+${parseFloat(op.preco).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}/noite)</span>
+                    </label>
+                `;
+            });
+            html += `</div></div>`;
+        }
+
+        container.innerHTML = html;
+        section.style.display = 'block';
+
+        container.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', btnCalc);
+        });
+    }
+
     // ─── Alert helpers ─────────────────────────────────────────────────────────
     const showAlert = (msg, isError = true) => {
         alertBox.style.display = 'block';
@@ -935,6 +994,12 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             if (!p.data_inicio && !p.data_fim) { defaultPrice = parseFloat(p.preco_base); break; }
         }
 
+        let extraDailySum = 0;
+        const extrasRadios = document.querySelectorAll('#nr-extras-container input[type="radio"]:checked');
+        extrasRadios.forEach(radio => {
+            extraDailySum += parseFloat(radio.getAttribute('data-preco')) || 0;
+        });
+
         let current = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
         const endDate = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
 
@@ -948,10 +1013,10 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
                 }
             }
             if (foundPrice === null) {
-                if (defaultPrice !== null) { total += defaultPrice; }
+                if (defaultPrice !== null) { total += (defaultPrice + extraDailySum); }
                 else { missingPrice = true; break; }
             } else {
-                total += foundPrice;
+                total += (foundPrice + extraDailySum);
             }
             current.setDate(current.getDate() + 1);
         }
@@ -1041,6 +1106,20 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             return;
         }
 
+        const extrasSelecionados = [];
+        if (isHotel) {
+            const extrasRadios = document.querySelectorAll('#nr-extras-container input[type="radio"]:checked');
+            extrasRadios.forEach(radio => {
+                if (radio.value) { // se não for 'Nenhum'
+                    extrasSelecionados.push({
+                        titulo: radio.value,
+                        tipo: radio.getAttribute('data-tipo'),
+                        preco: parseFloat(radio.getAttribute('data-preco'))
+                    });
+                }
+            });
+        }
+
         const payload = {
             empresa_id: empId,
             recurso_id: recursoId,
@@ -1050,7 +1129,8 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             data_hora_inicio: inicioISO,
             data_hora_fim: fimISO,
             preco_final: precoCalculado || 0,
-            status: 'pendente'
+            status: 'pendente',
+            extras_selecionados: extrasSelecionados
         };
 
         const { error: insertError } = await window.supabase.from('reservas').insert([payload]);
