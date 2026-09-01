@@ -38,6 +38,38 @@ export async function renderPrecos(container, session) {
                 <button class="btn btn-primary" id="btnNovoPreco" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Novo Preço</button>
             </div>
 
+            <!-- FILTERS TOGGLE BUTTON -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button id="btnToggleFilters" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                    <i class="fa-solid fa-filter"></i> Mostrar Filtro
+                </button>
+            </div>
+
+            <!-- FILTERS CONTAINER -->
+            <div id="filtersContainer" class="hidden" style="background: rgba(0,0,0,0.15); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                <h5 style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">Filtro de Pesquisa</h5>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                    <div class="form-group mb-0" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">Recurso</label>
+                        <input type="hidden" id="filterRecurso" value="">
+                        <div class="custom-dropdown" id="filterRecursoDropdown" style="width: 100%;">
+                            <div class="custom-dropdown-selected" tabindex="0" style="padding: 0.75rem 1rem;">
+                                <i class="fa-solid fa-cube icon-left"></i>
+                                <span class="selected-text">Todos os Recursos</span>
+                                <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                            </div>
+                            <div class="custom-dropdown-menu">
+                                <div class="custom-option active" data-value="">Todos os Recursos</div>
+                                ${meusRecursos ? meusRecursos.map(r => `<div class="custom-option" data-value="${escapeHTML(r.nome)}">${escapeHTML(r.nome)}</div>`).join('') : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0" style="display: flex;">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary" style="width: 100%; padding: 0.75rem 1rem;"><i class="fa-solid fa-eraser"></i> Limpar Filtro</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Formulário Novo/Editar Preço -->
             <div id="formContainerPreco" class="hidden" style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.2);">
                 <h4 id="formPrecoTitle" style="margin-bottom: 1rem;">Definir Época de Preço</h4>
@@ -121,7 +153,7 @@ export async function renderPrecos(container, session) {
             const periodoStr = prec.data_inicio ? `${dataI} a ${dataF}` : '<strong>Preço Global (Padrão)</strong>';
 
             html += `
-                <tr>
+                <tr class="preco-row" data-recurso="${escapeHTML(recursoNome)}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
                     <td>${periodoStr}</td>
                     <td><span class="badge badge-success">${parseFloat(prec.preco_base).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</span></td>
@@ -380,6 +412,77 @@ function setupPrecosListeners(meusRecursos) {
         }
         return false;
     }
+
+    // Filter logic UI setup
+    const applyFilters = () => {
+        const fRecurso = document.getElementById('filterRecurso').value.toLowerCase();
+
+        document.querySelectorAll('.data-table-container tbody tr.preco-row').forEach(tr => {
+            const recurso = (tr.getAttribute('data-recurso') || '').toLowerCase();
+            let show = true;
+            if (fRecurso && recurso !== fRecurso) show = false;
+            tr.style.display = show ? '' : 'none';
+        });
+    };
+
+    const btnToggleF = document.getElementById('btnToggleFilters');
+    const fContainer = document.getElementById('filtersContainer');
+    if (btnToggleF) {
+        btnToggleF.addEventListener('click', () => {
+            fContainer.classList.toggle('hidden');
+            if (fContainer.classList.contains('hidden')) {
+                btnToggleF.innerHTML = '<i class="fa-solid fa-filter"></i> Mostrar Filtro';
+            } else {
+                btnToggleF.innerHTML = '<i class="fa-solid fa-filter"></i> Ocultar Filtro';
+            }
+        });
+    }
+
+    const setDropdownFilter = (dropdownId, hiddenInputId) => {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        const selectedEl = dropdown.querySelector('.custom-dropdown-selected');
+        const optionsList = dropdown.querySelectorAll('.custom-option');
+        const textEl = dropdown.querySelector('.selected-text');
+        const hiddenInput = document.getElementById(hiddenInputId);
+
+        selectedEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        optionsList.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsList.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                textEl.textContent = opt.textContent;
+                dropdown.classList.remove('open');
+                hiddenInput.value = opt.getAttribute('data-value');
+                applyFilters();
+            });
+        });
+    };
+
+    setDropdownFilter('filterRecursoDropdown', 'filterRecurso');
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#filterRecursoDropdown')) {
+            document.getElementById('filterRecursoDropdown')?.classList.remove('open');
+        }
+    });
+
+    document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {
+        document.getElementById('filterRecurso').value = '';
+        const recDrop = document.getElementById('filterRecursoDropdown');
+        if (recDrop) {
+            recDrop.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
+            const initialRec = recDrop.querySelector('.custom-option[data-value=""]');
+            if (initialRec) initialRec.classList.add('active');
+            recDrop.querySelector('.selected-text').textContent = 'Todos os Recursos';
+        }
+        applyFilters();
+    });
 }
 
 function escapeHTML(str) {
