@@ -230,9 +230,12 @@ export async function renderReservas(container, session) {
 
             let extrasHtmlList = '';
             if (res.extras_selecionados && Array.isArray(res.extras_selecionados) && res.extras_selecionados.length > 0) {
-                extrasHtmlList = `<div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.1); padding: 0.3rem 0.5rem; border-radius: 4px; display: inline-block;">`;
-                extrasHtmlList += `<strong>Extras:</strong> ` + res.extras_selecionados.map(e => `${escapeHTML(e.titulo)} (${escapeHTML(e.tipo)})`).join(', ');
-                extrasHtmlList += `</div>`;
+                const extrasStr = btoa(unescape(encodeURIComponent(JSON.stringify(res.extras_selecionados))));
+                extrasHtmlList = `<div style="margin-top: 0.5rem; display: inline-block;">
+                    <button class="btn btn-show-extras" data-extras="${extrasStr}" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; display: inline-flex; align-items: center; gap: 0.3rem;">
+                        <i class="fa-solid fa-star"></i> Tem Extras (${res.extras_selecionados.length})
+                    </button>
+                </div>`;
             }
 
             html += `
@@ -413,6 +416,27 @@ export async function renderReservas(container, session) {
     });
 
     // Action Listeners for Table List
+    document.querySelectorAll('.btn-show-extras').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const encoded = e.currentTarget.getAttribute('data-extras');
+            try {
+                const extras = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+                let html = `<ul style="list-style: none; padding: 0; margin: 0; font-size: 0.95rem;">`;
+                extras.forEach(ext => {
+                    html += `
+                        <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <strong>${escapeHTML(ext.titulo)}:</strong> ${escapeHTML(ext.tipo)}
+                        </li>
+                    `;
+                });
+                html += `</ul>`;
+                window.showInfoModal('Extras Selecionados', html);
+            } catch (err) {
+                console.error("Erro a ler extras", err);
+            }
+        });
+    });
+
     document.querySelectorAll('.btn-action-reserva').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const btnEl = e.currentTarget;
@@ -651,7 +675,8 @@ export async function renderReservas(container, session) {
                         email: r.cliente_email,
                         telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
-                        recursoNome: r.recursos?.nome
+                        recursoNome: r.recursos?.nome,
+                        extras: r.extras_selecionados
                     }
                 };
             });
