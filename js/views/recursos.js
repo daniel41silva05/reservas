@@ -1,6 +1,7 @@
 export async function renderRecursos(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
     const empName = window.dashboardContext.currentEmpresaName;
+    const empTipo = window.dashboardContext.currentEmpresaTipo;
 
     if (!empId) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; text-align: center;"><p class="text-sub">Por favor, escolha ou crie uma empresa primeiro.</p></div>`;
@@ -41,6 +42,13 @@ export async function renderRecursos(container, session) {
                             <input type="text" id="recursoNome" class="form-control" required placeholder="Nome do recurso..." style="flex: 1; box-sizing: border-box;">
                         </div>
                         
+                        ${empTipo === 'hotel' ? `
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin: 0; display: flex; flex-direction: column;">
+                            <label>Nº Mín. Noites</label>
+                            <input type="number" id="recursoMinNights" class="form-control" min="1" step="1" value="1" required style="flex: 1; box-sizing: border-box;">
+                        </div>
+                        ` : ''}
+
                         <div class="form-group" style="margin: 0; min-width: 200px; display: flex; flex-direction: column;">
                             <label style="visibility: hidden;">Estado</label>
                             <label for="recursoAtivo" class="form-control" style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; margin: 0; padding: 0.9rem 1.2rem; box-sizing: border-box; flex: 1;">
@@ -64,6 +72,7 @@ export async function renderRecursos(container, session) {
                         <tr>
                             <th>Nome</th>
                             <th>Empresa</th>
+                            ${empTipo === 'hotel' ? '<th>Mín. Noites</th>' : ''}
                             <th>Status</th>
                             <th style="text-align: right;">Ações</th>
                         </tr>
@@ -79,9 +88,10 @@ export async function renderRecursos(container, session) {
                 <tr>
                     <td><strong>${escapeHTML(rec.nome)}</strong></td>
                     <td>${escapeHTML(empName)}</td>
+                    ${empTipo === 'hotel' ? `<td>${rec.min_nights || 1}</td>` : ''}
                     <td><span class="badge ${badgeClass}">${statusTxt}</span></td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-recurso" data-id="${rec.id}" data-nome="${escapeHTML(rec.nome)}" data-empresa="${rec.empresa_id}" data-ativo="${rec.ativo}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-secondary btn-edit-recurso" data-id="${rec.id}" data-nome="${escapeHTML(rec.nome)}" data-min-nights="${rec.min_nights || 1}" data-empresa="${rec.empresa_id}" data-ativo="${rec.ativo}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-secondary btn-delete-recurso" data-id="${rec.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
@@ -111,6 +121,9 @@ function setupRecursosListeners() {
         mainForm.reset();
         document.getElementById('recursoId').value = '';
         document.getElementById('recursoAtivo').checked = true;
+        if (document.getElementById('recursoMinNights')) {
+            document.getElementById('recursoMinNights').value = '1';
+        }
         document.getElementById('recursoMsg').style.display = 'none';
         title.textContent = 'Adicionar novo recurso';
         formContainer.classList.toggle('hidden');
@@ -130,6 +143,7 @@ function setupRecursosListeners() {
         const nome = document.getElementById('recursoNome').value;
         const ativo = document.getElementById('recursoAtivo').checked;
         const empresaId = window.dashboardContext.currentEmpresaId;
+        const empTipo = window.dashboardContext.currentEmpresaTipo;
 
         msgInfo.style.display = 'none';
         btnSalvar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -140,6 +154,12 @@ function setupRecursosListeners() {
             empresa_id: empresaId,
             ativo: ativo
         };
+
+        if (empTipo === 'hotel') {
+            payload.min_nights = parseInt(document.getElementById('recursoMinNights').value) || 1;
+        } else {
+            payload.min_nights = null;
+        }
 
         let reqError;
 
@@ -169,6 +189,10 @@ function setupRecursosListeners() {
             document.getElementById('recursoId').value = btnEl.getAttribute('data-id');
             document.getElementById('recursoNome').value = btnEl.getAttribute('data-nome');
             document.getElementById('recursoAtivo').checked = btnEl.getAttribute('data-ativo') === 'true';
+
+            if (document.getElementById('recursoMinNights')) {
+                document.getElementById('recursoMinNights').value = btnEl.getAttribute('data-min-nights') || '1';
+            }
 
             title.textContent = 'Editar Recurso';
             formContainer.classList.remove('hidden');

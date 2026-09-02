@@ -12,7 +12,7 @@ export async function renderNovaReservaWidget(container, session) {
     // 1. Fetch available active resources
     const { data: recursos, error } = await window.supabase
         .from('recursos')
-        .select('id, nome')
+        .select('id, nome, min_nights')
         .eq('empresa_id', empId)
         .eq('ativo', true);
 
@@ -77,8 +77,12 @@ export async function renderNovaReservaWidget(container, session) {
             <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
                 <h3>Nova Reserva</h3>
             </div>
-            
-            <div id="nr-alert" style="padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none;"></div>
+            <div id="nr-alert-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+                <div id="nr-alert" style="position: relative; padding: 1.5rem 2rem; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); background: var(--surface-color, #1e293b); color: var(--text-main, #f8fafc);">
+                    <button id="nr-alert-close" style="position: absolute; top: 12px; right: 15px; background: none; border: none; color: inherit; font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; opacity: 0.7; transition: opacity 0.2s;">&times;</button>
+                    <div id="nr-alert-msg" style="margin-top: 10px; font-weight: 500; font-size: 1.05rem;"></div>
+                </div>
+            </div>
 
             <form id="nr-form">
                 <!-- RECURSO -->
@@ -209,15 +213,18 @@ export async function renderNovaReservaWidget(container, session) {
 
     container.innerHTML = html;
 
-    setupWidgetListeners(empId, isHotel, isExternalWidget);
+    setupWidgetListeners(empId, isHotel, isExternalWidget, recursos);
 }
 
-function setupWidgetListeners(empId, isHotel, isExternalWidget) {
+function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
     const form = document.getElementById('nr-form');
     const inputInicio = document.getElementById('nr-inicio');
     const inputFim = document.getElementById('nr-fim');
     const selectRecurso = document.getElementById('nr-recurso');
+    const alertOverlay = document.getElementById('nr-alert-overlay');
     const alertBox = document.getElementById('nr-alert');
+    const alertMsg = document.getElementById('nr-alert-msg');
+    const alertClose = document.getElementById('nr-alert-close');
     const tooltip = document.getElementById('nr-cal-tooltip');
     let precoCalculado = 0;
 
@@ -440,6 +447,15 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
 
                         if (startStr === endStr) {
                             showAlert('O check-out deve ser num dia diferente do check-in.');
+                            return;
+                        }
+
+                        const diffDays = Math.round((new Date(endStr) - new Date(startStr)) / (1000 * 60 * 60 * 24));
+                        const selectedRec = recursos.find(r => r.id === selectRecurso.value);
+                        const minN = selectedRec?.min_nights || 1;
+                        
+                        if (diffDays < minN) {
+                            showAlert(`Este alojamento requer um mínimo de ${minN} noite(s).`);
                             return;
                         }
 
@@ -890,13 +906,24 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
 
     // ─── Alert helpers ─────────────────────────────────────────────────────────
     const showAlert = (msg, isError = true) => {
-        alertBox.style.display = 'block';
+        alertOverlay.style.display = 'flex';
         alertBox.style.background = isError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)';
         alertBox.style.color = isError ? '#f87171' : '#4ade80';
         alertBox.style.border = isError ? '1px solid #ef4444' : '1px solid #22c55e';
-        alertBox.textContent = msg;
+        alertMsg.textContent = msg;
     };
-    const hideAlert = () => alertBox.style.display = 'none';
+    const hideAlert = () => {
+        if (alertOverlay) alertOverlay.style.display = 'none';
+    };
+
+    if (alertClose) {
+        alertClose.addEventListener('click', hideAlert);
+    }
+    if (alertOverlay) {
+        alertOverlay.addEventListener('click', (e) => {
+            if (e.target === alertOverlay) hideAlert();
+        });
+    }
 
     // ─── Overlap checks ────────────────────────────────────────────────────────
     async function checkOverlaps(table, recursoId, startIso, endIso) {
@@ -1061,6 +1088,15 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget) {
             const fimDate = new Date(`${dateFim}T${horaCO}:00`);
 
             if (inicioDate >= fimDate) { showAlert('As datas fornecidas são inválidas.'); return; }
+
+            const diffDays = Math.round((new Date(dateFim) - new Date(dateInicio)) / (1000 * 60 * 60 * 24));
+            const selectedRec = recursos.find(r => r.id === recursoId);
+            const minN = selectedRec?.min_nights || 1;
+            
+            if (diffDays < minN) {
+                showAlert(`Este alojamento requer um mínimo de ${minN} noite(s).`);
+                return;
+            }
 
             inicioISO = inicioDate.toISOString();
             fimISO = fimDate.toISOString();
