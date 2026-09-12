@@ -238,10 +238,12 @@ export async function renderReservas(container, session) {
                     </button>
                 </div>`;
             }
+            
+            const numPessoasBadge = res.num_pessoas ? `<span class="badge" style="background: rgba(255,255,255,0.1); margin-top: 4px; display: inline-block;"><i class="fa-solid fa-user"></i> ${res.num_pessoas}</span>` : '';
 
             html += `
                 <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
-                    <td><strong>${escapeHTML(recursoNome)}</strong><br>${extrasHtmlList}</td>
+                    <td><strong>${escapeHTML(recursoNome)}</strong><br>${numPessoasBadge}${extrasHtmlList}</td>
                     <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}</small></td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
@@ -335,7 +337,8 @@ export async function renderReservas(container, session) {
                         telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome,
-                        extras: r.extras_selecionados
+                        extras: r.extras_selecionados,
+                        numPessoas: r.num_pessoas
                     }
                 };
             });
@@ -386,6 +389,12 @@ export async function renderReservas(container, session) {
                                 <i class="fa-solid fa-circle-half-stroke" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Estado:</strong> ${escapeHTML(info.event.extendedProps.status)}
                             </li>
+                            ${info.event.extendedProps.numPessoas ? `
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-users" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Pessoas:</strong> ${info.event.extendedProps.numPessoas}
+                            </li>
+                            ` : ''}
                             <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <i class="fa-solid fa-envelope" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Email:</strong> ${escapeHTML(info.event.extendedProps.email)}
@@ -677,7 +686,8 @@ export async function renderReservas(container, session) {
                         telemovel: r.cliente_telemovel,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome,
-                        extras: r.extras_selecionados
+                        extras: r.extras_selecionados,
+                        numPessoas: r.num_pessoas
                     }
                 };
             });

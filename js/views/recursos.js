@@ -41,6 +41,16 @@ export async function renderRecursos(container, session) {
                             <label>Nome do Recurso</label>
                             <input type="text" id="recursoNome" class="form-control" required placeholder="Nome do recurso..." style="flex: 1; box-sizing: border-box;">
                         </div>
+
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin: 0; display: flex; flex-direction: column;">
+                            <label>Máx. Pessoas <small>(Opcional)</small></label>
+                            <input type="number" id="recursoMaxPessoas" class="form-control" min="1" step="1" placeholder="Ex: 4" style="flex: 1; box-sizing: border-box;">
+                        </div>
+
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin: 0; display: flex; flex-direction: column;">
+                            <label>Texto Pessoas <small>(Opcional)</small></label>
+                            <input type="text" id="recursoLabelPessoas" class="form-control" placeholder="Ex: Nº Adultos" style="flex: 1; box-sizing: border-box;">
+                        </div>
                         
                         ${empTipo === 'hotel' ? `
                         <div class="form-group" style="flex: 1; min-width: 200px; margin: 0; display: flex; flex-direction: column;">
@@ -72,6 +82,7 @@ export async function renderRecursos(container, session) {
                         <tr>
                             <th>Nome</th>
                             <th>Empresa</th>
+                            <th>Máx. Pessoas</th>
                             ${empTipo === 'hotel' ? '<th>Mín. Noites</th>' : ''}
                             <th>Status</th>
                             <th style="text-align: right;">Ações</th>
@@ -88,10 +99,11 @@ export async function renderRecursos(container, session) {
                 <tr>
                     <td><strong>${escapeHTML(rec.nome)}</strong></td>
                     <td>${escapeHTML(empName)}</td>
+                    <td>${rec.max_pessoas || '<span class="text-sub">Sem Limite</span>'}</td>
                     ${empTipo === 'hotel' ? `<td>${rec.min_nights || 1}</td>` : ''}
                     <td><span class="badge ${badgeClass}">${statusTxt}</span></td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-recurso" data-id="${rec.id}" data-nome="${escapeHTML(rec.nome)}" data-min-nights="${rec.min_nights || 1}" data-empresa="${rec.empresa_id}" data-ativo="${rec.ativo}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-secondary btn-edit-recurso" data-id="${rec.id}" data-nome="${escapeHTML(rec.nome)}" data-max-pessoas="${rec.max_pessoas || ''}" data-label-pessoas="${escapeHTML(rec.label_pessoas || '')}" data-min-nights="${rec.min_nights || 1}" data-empresa="${rec.empresa_id}" data-ativo="${rec.ativo}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-secondary btn-delete-recurso" data-id="${rec.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
@@ -121,6 +133,8 @@ function setupRecursosListeners() {
         mainForm.reset();
         document.getElementById('recursoId').value = '';
         document.getElementById('recursoAtivo').checked = true;
+        document.getElementById('recursoMaxPessoas').value = '';
+        document.getElementById('recursoLabelPessoas').value = '';
         if (document.getElementById('recursoMinNights')) {
             document.getElementById('recursoMinNights').value = '1';
         }
@@ -152,7 +166,9 @@ function setupRecursosListeners() {
         const payload = {
             nome: nome,
             empresa_id: empresaId,
-            ativo: ativo
+            ativo: ativo,
+            max_pessoas: document.getElementById('recursoMaxPessoas').value ? parseInt(document.getElementById('recursoMaxPessoas').value) : null,
+            label_pessoas: document.getElementById('recursoLabelPessoas').value || null
         };
 
         if (empTipo === 'hotel') {
@@ -188,6 +204,8 @@ function setupRecursosListeners() {
             const btnEl = e.currentTarget;
             document.getElementById('recursoId').value = btnEl.getAttribute('data-id');
             document.getElementById('recursoNome').value = btnEl.getAttribute('data-nome');
+            document.getElementById('recursoMaxPessoas').value = btnEl.getAttribute('data-max-pessoas') || '';
+            document.getElementById('recursoLabelPessoas').value = btnEl.getAttribute('data-label-pessoas') || '';
             document.getElementById('recursoAtivo').checked = btnEl.getAttribute('data-ativo') === 'true';
 
             if (document.getElementById('recursoMinNights')) {

@@ -12,7 +12,7 @@ export async function renderNovaReservaWidget(container, session) {
     // 1. Fetch available active resources
     const { data: recursos, error } = await window.supabase
         .from('recursos')
-        .select('id, nome, min_nights')
+        .select('id, nome, min_nights, max_pessoas, label_pessoas')
         .eq('empresa_id', empId)
         .eq('ativo', true)
         .order('nome', { ascending: true });
@@ -102,6 +102,21 @@ export async function renderNovaReservaWidget(container, session) {
             : `<div class="custom-option disabled" style="cursor: default;">Nenhum recurso disponível/ativo.</div>`}
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group" id="nr-pessoas-group" style="display: none; margin-bottom: 1rem;">
+                    <label>Número de Pessoas</label>
+                    <div class="custom-dropdown" id="nr-pessoas-dropdown" style="width: 100%;">
+                        <div class="custom-dropdown-selected" tabindex="0" style="background: var(--surface-color); border: var(--glass-border, 1px solid var(--border-color)); border-radius: 12px; padding: 0.9rem 1.2rem;">
+                            <i class="fa-solid fa-users icon-left"></i>
+                            <span class="selected-text">Selecione o número de pessoas...</span>
+                            <i class="fa-solid fa-chevron-down icon-arrow"></i>
+                        </div>
+                        <div class="custom-dropdown-menu" id="nr-pessoas-menu">
+                            <!-- Options rendered dynamically -->
+                        </div>
+                    </div>
+                    <input type="hidden" id="nr-num-pessoas">
                 </div>
 
                 ${isHotel ? `
@@ -352,18 +367,37 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     // Show price on available days
                     let foundPrice = null;
                     let defaultPrice = null;
+                    const pessoasGroup = document.getElementById('nr-pessoas-group');
+                    const numPessoasEl = document.getElementById('nr-num-pessoas');
+                    const numPessoas = (pessoasGroup && pessoasGroup.style.display !== 'none' && numPessoasEl && numPessoasEl.value) 
+                        ? parseInt(numPessoasEl.value) 
+                        : null;
+                    
+                    let specificPrice = null;
+                    let generalPrice = null;
+                    let defaultSpecificPrice = null;
+                    let defaultGeneralPrice = null;
+
                     for (let p of (window.currentResourcePrices || [])) {
-                        if (!p.data_inicio && !p.data_fim) {
-                            defaultPrice = parseFloat(p.preco_base);
-                        } else if (p.data_inicio && p.data_fim) {
-                            const pStart = new Date(p.data_inicio + 'T00:00:00');
-                            const pEnd = new Date(p.data_fim + 'T23:59:59');
-                            if (cellDate >= pStart && cellDate <= pEnd) {
-                                foundPrice = parseFloat(p.preco_base);
-                            }
+                        const isDateMatch = p.data_inicio && p.data_fim && cellDate >= new Date(p.data_inicio + 'T00:00:00') && cellDate <= new Date(p.data_fim + 'T23:59:59');
+                        const isDefault = !p.data_inicio && !p.data_fim;
+                        
+                        if (p.num_pessoas === numPessoas) {
+                            if (isDateMatch) specificPrice = parseFloat(p.preco_base);
+                            if (isDefault) defaultSpecificPrice = parseFloat(p.preco_base);
+                        }
+                        if (p.num_pessoas === null) {
+                            if (isDateMatch) generalPrice = parseFloat(p.preco_base);
+                            if (isDefault) defaultGeneralPrice = parseFloat(p.preco_base);
                         }
                     }
-                    const priceToShow = foundPrice !== null ? foundPrice : defaultPrice;
+
+                    // Precedence: Date+NumPessoas > Date+General > Default+NumPessoas > Default+General
+                    let priceToShow = null;
+                    if (specificPrice !== null) priceToShow = specificPrice;
+                    else if (generalPrice !== null) priceToShow = generalPrice;
+                    else if (defaultSpecificPrice !== null) priceToShow = defaultSpecificPrice;
+                    else if (defaultGeneralPrice !== null) priceToShow = defaultGeneralPrice;
 
                     if (priceToShow !== null) {
                         return {
@@ -454,7 +488,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                         const diffDays = Math.round((new Date(endStr) - new Date(startStr)) / (1000 * 60 * 60 * 24));
                         const selectedRec = recursos.find(r => r.id === selectRecurso.value);
                         const minN = selectedRec?.min_nights || 1;
-                        
+
                         if (diffDays < minN) {
                             showAlert(`Este alojamento requer um mínimo de ${minN} noite(s).`);
                             return;
@@ -695,7 +729,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
         if (isHotel) {
             const { data: precos } = await window.supabase
                 .from('precos')
-                .select('preco_base, data_inicio, data_fim')
+                .select('preco_base, data_inicio, data_fim, num_pessoas')
                 .eq('recurso_id', recursoId);
             window.currentResourcePrices = precos || [];
 
@@ -806,7 +840,18 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
         document.addEventListener('click', () => {
             dropdown.classList.remove('open');
+            const pDrop = document.getElementById('nr-pessoas-dropdown');
+            if (pDrop) pDrop.classList.remove('open');
         });
+        
+        const pessoasDropdown = document.getElementById('nr-pessoas-dropdown');
+        if (pessoasDropdown) {
+            const pSelectedEl = pessoasDropdown.querySelector('.custom-dropdown-selected');
+            pSelectedEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                pessoasDropdown.classList.toggle('open');
+            });
+        }
 
         optionsList.forEach(opt => {
             opt.addEventListener('click', (e) => {
@@ -824,6 +869,48 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                 inputFim.value = '';
                 if (nrCalendar) nrCalendar.removeAllEvents();
 
+                const resObj = recursos.find(r => r.id == selectRecurso.value);
+                const pessoasGroup = document.getElementById('nr-pessoas-group');
+                const pessoasMenu = document.getElementById('nr-pessoas-menu');
+                const pessoasDropdown = document.getElementById('nr-pessoas-dropdown');
+                const pessoasInput = document.getElementById('nr-num-pessoas');
+                const pessoasText = pessoasDropdown.querySelector('.selected-text');
+                
+                if (resObj && resObj.max_pessoas) {
+                    const labelText = resObj.label_pessoas || 'Número de Pessoas';
+                    const defaultText = `Selecione ${labelText.toLowerCase()}...`;
+                    
+                    const labelEl = pessoasGroup.querySelector('label');
+                    if (labelEl) labelEl.textContent = labelText;
+
+                    let opts = '';
+                    for (let i = 1; i <= resObj.max_pessoas; i++) {
+                        opts += `<div class="custom-option" data-value="${i}">${i}</div>`;
+                    }
+                    pessoasMenu.innerHTML = opts;
+                    pessoasGroup.style.display = 'block';
+                    pessoasInput.value = '';
+                    pessoasText.textContent = defaultText;
+                    
+                    const pOptions = pessoasMenu.querySelectorAll('.custom-option');
+                    pOptions.forEach(pOpt => {
+                        pOpt.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            pOptions.forEach(o => o.classList.remove('active'));
+                            pOpt.classList.add('active');
+                            pessoasText.textContent = pOpt.textContent;
+                            pessoasDropdown.classList.remove('open');
+                            pessoasInput.value = pOpt.getAttribute('data-value');
+                            pessoasInput.dispatchEvent(new Event('change'));
+                        });
+                    });
+                } else {
+                    pessoasGroup.style.display = 'none';
+                    pessoasMenu.innerHTML = '';
+                    pessoasInput.value = '';
+                }
+                btnCalc();
+
                 loadCalendarEvents(opt.getAttribute('data-value'));
             });
         });
@@ -836,6 +923,14 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
         });
         document.getElementById('nr-hora-checkout')?.addEventListener('change', () => {
             if (inputInicio.value && inputFim.value) btnCalc();
+        });
+        document.getElementById('nr-num-pessoas')?.addEventListener('change', () => {
+            btnCalc();
+            if (isHotel && nrCalendar) {
+                nrCalendar.destroy();
+                nrCalendar = null;
+                initCalendar();
+            }
         });
     }
 
@@ -976,7 +1071,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
     }
 
     // ─── Price calculation (hotel) ─────────────────────────────────────────────
-    const btnCalc = async () => {
+    async function btnCalc() {
         if (!isHotel) return;
 
         const recursoId = selectRecurso.value;
@@ -1005,7 +1100,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
         const { data: precosData, error } = await window.supabase
             .from('precos')
-            .select('preco_base, data_inicio, data_fim')
+            .select('preco_base, data_inicio, data_fim, num_pessoas')
             .eq('recurso_id', recursoId);
 
         if (error || !precosData || precosData.length === 0) {
@@ -1016,11 +1111,6 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
         let total = 0;
         let missingPrice = false;
-        let defaultPrice = null;
-
-        for (let p of precosData) {
-            if (!p.data_inicio && !p.data_fim) { defaultPrice = parseFloat(p.preco_base); break; }
-        }
 
         let extraDailySum = 0;
         const extrasRadios = document.querySelectorAll('#nr-extras-container input[type="radio"]:checked');
@@ -1030,19 +1120,56 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
         let current = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
         const endDate = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+        
+        const pessoasGroup = document.getElementById('nr-pessoas-group');
+        const numPessoasEl = document.getElementById('nr-num-pessoas');
+        if (pessoasGroup.style.display !== 'none' && !numPessoasEl.value) {
+            if (msgEl) { msgEl.textContent = 'A aguardar nr. pessoas...'; msgEl.style.color = 'var(--warning)'; }
+            precoCalculado = null;
+            return;
+        }
+        
+        const numPessoas = pessoasGroup.style.display !== 'none' ? parseInt(numPessoasEl.value) : null;
 
         while (current < endDate) {
             let foundPrice = null;
+            
+            // 1. Procurar preço específico para a data e número de pessoas
             for (let p of precosData) {
-                if (p.data_inicio && p.data_fim) {
+                if (p.data_inicio && p.data_fim && p.num_pessoas === numPessoas) {
                     const pStart = new Date(p.data_inicio + 'T00:00:00');
                     const pEnd = new Date(p.data_fim + 'T23:59:59');
                     if (current >= pStart && current <= pEnd) { foundPrice = parseFloat(p.preco_base); break; }
                 }
             }
+            
+            // 2. Procurar preço geral para a data
             if (foundPrice === null) {
-                if (defaultPrice !== null) { total += (defaultPrice + extraDailySum); }
-                else { missingPrice = true; break; }
+                for (let p of precosData) {
+                    if (p.data_inicio && p.data_fim && p.num_pessoas === null) {
+                        const pStart = new Date(p.data_inicio + 'T00:00:00');
+                        const pEnd = new Date(p.data_fim + 'T23:59:59');
+                        if (current >= pStart && current <= pEnd) { foundPrice = parseFloat(p.preco_base); break; }
+                    }
+                }
+            }
+            
+            // 3. Procurar preço default para o número de pessoas
+            if (foundPrice === null) {
+                for (let p of precosData) {
+                    if (!p.data_inicio && !p.data_fim && p.num_pessoas === numPessoas) { foundPrice = parseFloat(p.preco_base); break; }
+                }
+            }
+            
+            // 4. Procurar preço default geral
+            if (foundPrice === null) {
+                for (let p of precosData) {
+                    if (!p.data_inicio && !p.data_fim && p.num_pessoas === null) { foundPrice = parseFloat(p.preco_base); break; }
+                }
+            }
+
+            if (foundPrice === null) {
+                missingPrice = true; break;
             } else {
                 total += (foundPrice + extraDailySum);
             }
@@ -1093,7 +1220,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             const diffDays = Math.round((new Date(dateFim) - new Date(dateInicio)) / (1000 * 60 * 60 * 24));
             const selectedRec = recursos.find(r => r.id === recursoId);
             const minN = selectedRec?.min_nights || 1;
-            
+
             if (diffDays < minN) {
                 showAlert(`Este alojamento requer um mínimo de ${minN} noite(s).`);
                 return;
@@ -1143,6 +1270,15 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             return;
         }
 
+        const pessoasGroup = document.getElementById('nr-pessoas-group');
+        const numPessoasEl = document.getElementById('nr-num-pessoas');
+        if (pessoasGroup.style.display !== 'none' && !numPessoasEl.value) {
+            showAlert('Por favor selecione o número de pessoas.');
+            submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Solicitar Reserva';
+            submitBtn.disabled = false;
+            return;
+        }
+
         const extrasSelecionados = [];
         if (isHotel) {
             const extrasRadios = document.querySelectorAll('#nr-extras-container input[type="radio"]:checked');
@@ -1167,7 +1303,8 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             data_hora_fim: fimISO,
             preco_final: precoCalculado || 0,
             status: 'pendente',
-            extras_selecionados: extrasSelecionados
+            extras_selecionados: extrasSelecionados,
+            num_pessoas: document.getElementById('nr-pessoas-group').style.display !== 'none' ? parseInt(document.getElementById('nr-num-pessoas').value) : null
         };
 
         const { error: insertError } = await window.supabase.from('reservas').insert([payload]);

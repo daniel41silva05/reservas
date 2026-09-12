@@ -19,7 +19,7 @@ export async function renderPrecos(container, session) {
     // Para o formulário, precisamos dos recursos
     const { data: meusRecursos } = await window.supabase
         .from('recursos')
-        .select('id, nome, empresa_id')
+        .select('id, nome, empresa_id, max_pessoas')
         .eq('empresa_id', empId)
         .eq('ativo', true);
 
@@ -102,6 +102,13 @@ export async function renderPrecos(container, session) {
                             </div>
                         </div>
 
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin: 0; display: flex; flex-direction: column;">
+                            <label>Nº de Pessoas <small>(Opcional)</small></label>
+                            <div id="precoNumPessoasContainer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; align-items: center;">
+                                <span class="text-sub" style="font-size: 0.85rem;">Selecione um recurso primeiro.</span>
+                            </div>
+                        </div>
+
                         <div class="form-group" style="margin: 0; min-width: 250px; display: flex; flex-direction: column;">
                             <label style="visibility: hidden;">Tipo de Preço</label>
                             <label for="precoIsDefault" class="form-control" style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; margin: 0; padding: 0.9rem 1.2rem; box-sizing: border-box; flex: 1;">
@@ -145,6 +152,7 @@ export async function renderPrecos(container, session) {
                     <thead>
                         <tr>
                             <th>Recurso</th>
+                            <th>Pessoas</th>
                             <th>Período</th>
                             <th>Valor Base</th>
                             <th style="text-align: right;">Ações</th>
@@ -159,14 +167,16 @@ export async function renderPrecos(container, session) {
             const dataI = prec.data_inicio ? new Date(prec.data_inicio).toLocaleDateString('pt-PT') : '';
             const dataF = prec.data_fim ? new Date(prec.data_fim).toLocaleDateString('pt-PT') : '';
             const periodoStr = prec.data_inicio ? `${dataI} a ${dataF}` : '<strong>Preço Global (Padrão)</strong>';
+            const numPessoasStr = prec.num_pessoas ? `${prec.num_pessoas} Pessoas` : '<strong>Geral</strong>';
 
             html += `
                 <tr class="preco-row" data-recurso="${escapeHTML(recursoNome)}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
+                    <td>${numPessoasStr}</td>
                     <td>${periodoStr}</td>
                     <td><span class="badge badge-success">${parseFloat(prec.preco_base).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</span></td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-preco" data-id="${prec.id}" data-empresa="${prec.empresa_id}" data-recurso="${prec.recurso_id}" data-inicio="${prec.data_inicio || ''}" data-fim="${prec.data_fim || ''}" data-preco="${prec.preco_base}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-secondary btn-edit-preco" data-id="${prec.id}" data-empresa="${prec.empresa_id}" data-recurso="${prec.recurso_id}" data-inicio="${prec.data_inicio || ''}" data-fim="${prec.data_fim || ''}" data-preco="${prec.preco_base}" data-num-pessoas="${prec.num_pessoas || ''}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-secondary btn-delete-preco" data-id="${prec.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
@@ -240,8 +250,27 @@ function setupPrecosListeners(meusRecursos) {
                 textEl.textContent = opt.textContent;
                 dropdown.classList.remove('open');
                 hiddenInput.value = opt.getAttribute('data-value');
+                
+                const resObj = meusRecursos.find(r => r.id == hiddenInput.value);
+                renderNumPessoasCheckboxes(resObj);
             });
         });
+    }
+
+    function renderNumPessoasCheckboxes(resObj, selectedVals = []) {
+        const container = document.getElementById('precoNumPessoasContainer');
+        if (!resObj || !resObj.max_pessoas) {
+            container.innerHTML = '<span class="text-sub" style="font-size: 0.85rem;">Sem limite configurado.</span>';
+            return;
+        }
+        let html = '';
+        for(let i = 1; i <= resObj.max_pessoas; i++) {
+            const isChecked = selectedVals.includes(i.toString()) ? 'checked' : '';
+            html += `<label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; font-size: 0.85rem;">
+                <input type="checkbox" name="preco_num_pessoas" value="${i}" ${isChecked} style="accent-color: var(--primary-color);"> ${i}
+            </label>`;
+        }
+        container.innerHTML = html;
     }
 
     // Toggle Formulário
@@ -254,6 +283,7 @@ function setupPrecosListeners(meusRecursos) {
             dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
         }
         document.getElementById('precoMsg').style.display = 'none';
+        document.getElementById('precoNumPessoasContainer').innerHTML = '<span class="text-sub" style="font-size: 0.85rem;">Selecione um recurso primeiro.</span>';
         chkDefault.checked = false;
         chkDefault.dispatchEvent(new Event('change'));
         title.textContent = 'Adicionar novo preço';
@@ -285,6 +315,19 @@ function setupPrecosListeners(meusRecursos) {
             return;
         }
 
+        const checkboxes = document.querySelectorAll('input[name="preco_num_pessoas"]:checked');
+        const selectedNumPessoas = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+        if (selectedNumPessoas.length === 0) {
+            selectedNumPessoas.push(null);
+        }
+
+        if (id && selectedNumPessoas.length > 1) {
+            msgInfo.textContent = "Erro: Ao editar, só pode alterar um registo de cada vez. Selecione apenas um número de pessoas.";
+            msgInfo.style.display = 'block';
+            return;
+        }
+
         if (!isDefault) {
             if (!dataInicio || !dataFim) {
                 msgInfo.textContent = "Erro: Defina a data inicial e final ou marque como Peço Default.";
@@ -298,12 +341,12 @@ function setupPrecosListeners(meusRecursos) {
             }
         }
 
-        const isOverlap = await checkOverlaps(id, recursoId, isDefault ? null : dataInicio, isDefault ? null : dataFim);
+        const isOverlap = await checkOverlaps(id, recursoId, isDefault ? null : dataInicio, isDefault ? null : dataFim, selectedNumPessoas);
         if (isOverlap) {
             if (isDefault) {
-                msgInfo.textContent = "Erro: Já existe um preço default para este recurso.";
+                msgInfo.textContent = "Erro: Já existe um preço default para as condições selecionadas.";
             } else {
-                msgInfo.textContent = "Erro: As datas coincidem com outra configuração de preço para este recurso. Verifique as concorrências.";
+                msgInfo.textContent = "Erro: As datas coincidem com outra configuração de preço para as mesmas condições.";
             }
             msgInfo.style.display = 'block';
             return;
@@ -313,21 +356,32 @@ function setupPrecosListeners(meusRecursos) {
         btnSalvar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         btnSalvar.disabled = true;
 
-        const payload = {
-            empresa_id: empresaId,
-            recurso_id: recursoId,
-            data_inicio: isDefault ? null : dataInicio,
-            data_fim: isDefault ? null : dataFim,
-            preco_base: parseFloat(precoBase)
-        };
-
         let reqError;
 
         if (id) {
+            // Edit
+            const numToSave = selectedNumPessoas.length > 0 ? selectedNumPessoas[0] : null;
+            const payload = {
+                empresa_id: empresaId,
+                recurso_id: recursoId,
+                data_inicio: isDefault ? null : dataInicio,
+                data_fim: isDefault ? null : dataFim,
+                preco_base: parseFloat(precoBase),
+                num_pessoas: numToSave
+            };
             const { error } = await window.supabase.from('precos').update(payload).eq('id', id);
             reqError = error;
         } else {
-            const { error } = await window.supabase.from('precos').insert([payload]);
+            // Insert
+            const payloads = selectedNumPessoas.map(num => ({
+                empresa_id: empresaId,
+                recurso_id: recursoId,
+                data_inicio: isDefault ? null : dataInicio,
+                data_fim: isDefault ? null : dataFim,
+                preco_base: parseFloat(precoBase),
+                num_pessoas: num
+            }));
+            const { error } = await window.supabase.from('precos').insert(payloads);
             reqError = error;
         }
 
@@ -356,6 +410,10 @@ function setupPrecosListeners(meusRecursos) {
                     dropdown.querySelectorAll('.custom-option').forEach(o => o.classList.remove('active'));
                     opt.classList.add('active');
                     dropdown.querySelector('.selected-text').textContent = opt.textContent;
+                    
+                    const resObj = meusRecursos.find(r => r.id == recursoId);
+                    const numPess = btnEl.getAttribute('data-num-pessoas');
+                    renderNumPessoasCheckboxes(resObj, numPess ? [numPess] : []);
                 }
             }
 
@@ -391,32 +449,36 @@ function setupPrecosListeners(meusRecursos) {
         });
     });
 
-    async function checkOverlaps(editId, recursoId, startStr, endStr) {
+    async function checkOverlaps(editId, recursoId, startStr, endStr, selectedNumPessoas) {
         const { data } = await window.supabase.from('precos')
-            .select('id, data_inicio, data_fim')
+            .select('id, data_inicio, data_fim, num_pessoas')
             .eq('recurso_id', recursoId);
 
         if (!data) return false;
 
-        if (!startStr || !endStr) {
-            // It's a default price; check if any other default price exists
+        for (let num of selectedNumPessoas) {
+            if (!startStr || !endStr) {
+                // It's a default price; check if any other default price exists for this num_pessoas
+                for (let r of data) {
+                    if (editId && r.id == editId) continue;
+                    if (r.num_pessoas !== num) continue;
+                    if (!r.data_inicio && !r.data_fim) return true;
+                }
+                continue;
+            }
+
+            // Standard overlap logic
+            const start = new Date(startStr);
+            const end = new Date(endStr);
+
             for (let r of data) {
                 if (editId && r.id == editId) continue;
-                if (!r.data_inicio && !r.data_fim) return true;
+                if (r.num_pessoas !== num) continue;
+                if (!r.data_inicio || !r.data_fim) continue; // skip default prices
+                let rs = new Date(r.data_inicio);
+                let re = new Date(r.data_fim);
+                if (start <= re && end >= rs) return true;
             }
-            return false;
-        }
-
-        // Standard overlap logic
-        const start = new Date(startStr);
-        const end = new Date(endStr);
-
-        for (let r of data) {
-            if (editId && r.id == editId) continue;
-            if (!r.data_inicio || !r.data_fim) continue; // skip default prices
-            let rs = new Date(r.data_inicio);
-            let re = new Date(r.data_fim);
-            if (start <= re && end >= rs) return true;
         }
         return false;
     }
