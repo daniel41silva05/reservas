@@ -11,7 +11,8 @@ export async function renderReservas(container, session) {
         .from('recursos')
         .select('id, nome')
         .eq('empresa_id', empId)
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
 
     const { data: reservas, error } = await window.supabase
         .from('reservas')

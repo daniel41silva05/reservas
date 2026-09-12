@@ -32,6 +32,22 @@ export async function renderBloqueios(container, session) {
         return;
     }
 
+    if (bloqueios) {
+        bloqueios.sort((a, b) => {
+            const nomeA = (a.recursos ? a.recursos.nome : '').toLowerCase();
+            const nomeB = (b.recursos ? b.recursos.nome : '').toLowerCase();
+            return nomeA.localeCompare(nomeB);
+        });
+    }
+
+    if (bloqueiosRecorrentes) {
+        bloqueiosRecorrentes.sort((a, b) => {
+            const nomeA = (a.recursos ? a.recursos.nome : '').toLowerCase();
+            const nomeB = (b.recursos ? b.recursos.nome : '').toLowerCase();
+            return nomeA.localeCompare(nomeB);
+        });
+    }
+
     let html = `
         <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">

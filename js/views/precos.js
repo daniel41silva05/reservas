@@ -28,6 +28,14 @@ export async function renderPrecos(container, session) {
         return;
     }
 
+    if (precos) {
+        precos.sort((a, b) => {
+            const nomeA = (a.recursos ? a.recursos.nome : '').toLowerCase();
+            const nomeB = (b.recursos ? b.recursos.nome : '').toLowerCase();
+            return nomeA.localeCompare(nomeB);
+        });
+    }
+
     let html = `
         <div class="glass-panel" style="padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">

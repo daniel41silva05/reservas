@@ -14,7 +14,8 @@ export async function renderNovaReservaWidget(container, session) {
         .from('recursos')
         .select('id, nome, min_nights')
         .eq('empresa_id', empId)
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
 
     if (error) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; color: var(--danger);">Erro a carregar recursos: ${error.message}</div>`;

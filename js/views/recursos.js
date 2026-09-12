@@ -13,7 +13,7 @@ export async function renderRecursos(container, session) {
         .from('recursos')
         .select('*')
         .eq('empresa_id', empId)
-        .order('id', { ascending: false });
+        .order('nome', { ascending: true });
 
     if (error) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; color: var(--danger);">Erro a carregar recursos: ${error.message}</div>`;

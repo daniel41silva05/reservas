@@ -2,7 +2,7 @@ export async function renderEmpresas(container, session) {
     const { data: empresas, error } = await window.supabase
         .from('empresas')
         .select('*')
-        .order('id', { ascending: false });
+        .order('nome', { ascending: true });
 
     if (error) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; border-color: var(--danger);"><h3 style="color: var(--danger);">Erro a carregar empresas</h3><p>${error.message}</p></div>`;
