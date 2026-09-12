@@ -159,13 +159,7 @@
                         if (customOpt) {
                             customOpt.click(); // Trigger the custom dropdown's click handler
                             // Disable the dropdown to enforce fixed selection
-                            const dd = document.getElementById('nr-recurso-dropdown');
-                            if (dd) {
-                                dd.style.pointerEvents = 'none';
-                                dd.style.opacity = '0.7';
-                                const arrow = dd.querySelector('.icon-arrow');
-                                if (arrow) arrow.style.display = 'none';
-                            }
+                            // (Removed: User wants to be able to change the pre-selected resource)
                         }
                     }
                 }
