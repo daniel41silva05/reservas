@@ -117,6 +117,10 @@ export async function renderExtras(container, session) {
                             <label>Preço por Noite (€)</label>
                             <input type="number" step="0.01" min="0" id="extraValor" class="form-control" required placeholder="">
                         </div>
+                        <div class="form-group">
+                            <label>Máx Pessoas (opcional)</label>
+                            <input type="number" min="1" id="extraMaxPessoas" class="form-control" placeholder="Sem limite">
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
@@ -134,6 +138,7 @@ export async function renderExtras(container, session) {
                             <th>Recurso</th>
                             <th>Título</th>
                             <th>Tipo</th>
+                            <th>Máx Pessoas</th>
                             <th>Preço/Noite</th>
                             <th style="text-align: right;">Ações</th>
                         </tr>
@@ -150,9 +155,10 @@ export async function renderExtras(container, session) {
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
                     <td>${escapeHTML(ext.titulo)}</td>
                     <td>${escapeHTML(ext.tipo)}</td>
+                    <td>${ext.max_pessoas ? ext.max_pessoas : '-'}</td>
                     <td><span class="badge badge-success">${parseFloat(ext.preco).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</span></td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-extra" data-id="${ext.id}" data-recurso="${ext.recurso_id}" data-titulo="${escapeHTML(ext.titulo)}" data-tipo="${escapeHTML(ext.tipo)}" data-preco="${ext.preco}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-secondary btn-edit-extra" data-id="${ext.id}" data-recurso="${ext.recurso_id}" data-titulo="${escapeHTML(ext.titulo)}" data-tipo="${escapeHTML(ext.tipo)}" data-preco="${ext.preco}" data-max-pessoas="${ext.max_pessoas || ''}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-secondary btn-delete-extra" data-id="${ext.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
@@ -183,6 +189,7 @@ function setupExtrasListeners() {
     btnNovo.addEventListener('click', () => {
         mainForm.reset();
         document.getElementById('extraId').value = '';
+        document.getElementById('extraMaxPessoas').value = '';
         document.querySelectorAll('input[name="extraRecursoIds"]').forEach(cb => cb.checked = false);
         document.getElementById('extraMsg').style.display = 'none';
         title.textContent = 'Adicionar novo Extra';
@@ -205,6 +212,7 @@ function setupExtrasListeners() {
         const titulo = document.getElementById('extraTitulo').value;
         const tipo = document.getElementById('extraTipo').value;
         const preco = document.getElementById('extraValor').value;
+        const maxPessoas = document.getElementById('extraMaxPessoas').value;
         const empresaId = window.dashboardContext.currentEmpresaId;
 
         if (recursoIds.length === 0) {
@@ -225,7 +233,8 @@ function setupExtrasListeners() {
                 recurso_id: recursoIds[0],
                 titulo: titulo,
                 tipo: tipo,
-                preco: parseFloat(preco)
+                preco: parseFloat(preco),
+                max_pessoas: maxPessoas ? parseInt(maxPessoas) : null
             };
             const { error } = await window.supabase.from('extras').update(payload).eq('id', id);
             reqError = error;
@@ -235,7 +244,8 @@ function setupExtrasListeners() {
                 recurso_id: rId,
                 titulo: titulo,
                 tipo: tipo,
-                preco: parseFloat(preco)
+                preco: parseFloat(preco),
+                max_pessoas: maxPessoas ? parseInt(maxPessoas) : null
             }));
             const { error } = await window.supabase.from('extras').insert(payloads);
             reqError = error;
@@ -265,6 +275,7 @@ function setupExtrasListeners() {
             document.getElementById('extraTitulo').value = btnEl.getAttribute('data-titulo');
             document.getElementById('extraTipo').value = btnEl.getAttribute('data-tipo');
             document.getElementById('extraValor').value = btnEl.getAttribute('data-preco');
+            document.getElementById('extraMaxPessoas').value = btnEl.getAttribute('data-max-pessoas') || '';
 
             title.textContent = 'Editar Extra';
             formContainer.classList.remove('hidden');

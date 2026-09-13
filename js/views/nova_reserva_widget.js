@@ -737,7 +737,8 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                 .from('extras')
                 .select('*')
                 .eq('recurso_id', recursoId);
-            renderExtrasOptions(extrasData);
+            window.currentResourceExtras = extrasData || [];
+            renderExtrasOptions();
         }
 
         // Store recurring blocks globally
@@ -925,6 +926,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             if (inputInicio.value && inputFim.value) btnCalc();
         });
         document.getElementById('nr-num-pessoas')?.addEventListener('change', () => {
+            renderExtrasOptions();
             btnCalc();
             if (isHotel && nrCalendar) {
                 nrCalendar.destroy();
@@ -956,17 +958,28 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
     }
 
     // ─── Extras Rendering ──────────────────────────────────────────────────────
-    function renderExtrasOptions(extrasData) {
+    function renderExtrasOptions() {
+        const extrasData = window.currentResourceExtras || [];
         const section = document.getElementById('nr-extras-section');
         const container = document.getElementById('nr-extras-container');
-        if (!extrasData || extrasData.length === 0) {
+        
+        const numPessoasEl = document.getElementById('nr-num-pessoas');
+        const currentPessoas = (numPessoasEl && numPessoasEl.value) ? parseInt(numPessoasEl.value) : null;
+
+        const filteredExtras = extrasData.filter(ex => {
+            if (!ex.max_pessoas) return true;
+            if (!currentPessoas) return true;
+            return currentPessoas <= ex.max_pessoas;
+        });
+
+        if (!filteredExtras || filteredExtras.length === 0) {
             section.style.display = 'none';
             container.innerHTML = '';
             return;
         }
 
         const grouped = {};
-        extrasData.forEach(ex => {
+        filteredExtras.forEach(ex => {
             if (!grouped[ex.titulo]) grouped[ex.titulo] = [];
             grouped[ex.titulo].push(ex);
         });
