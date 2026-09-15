@@ -198,7 +198,7 @@ export async function renderNovaReservaWidget(container, session) {
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div class="form-group">
-                        <label>Nº Documento Identificação</label>
+                        <label>Nº Identificação</label>
                         <input type="text" id="nr-cc" class="form-control" placeholder="CC / Passaporte">
                     </div>
                     <div class="form-group">
