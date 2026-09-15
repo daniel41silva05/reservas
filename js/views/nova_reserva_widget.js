@@ -191,9 +191,20 @@ export async function renderNovaReservaWidget(container, session) {
                     <input type="email" id="nr-email" class="form-control" required>
                 </div>
                 
-                <div class="form-group" style="margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
                     <label>Telemóvel</label>
                     <input type="text" id="nr-telemovel" class="form-control" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label>Nº Documento Identificação</label>
+                        <input type="text" id="nr-cc" class="form-control" placeholder="CC / Passaporte">
+                    </div>
+                    <div class="form-group">
+                        <label>NIF</label>
+                        <input type="text" id="nr-contribuinte" class="form-control">
+                    </div>
                 </div>
 
                 ${isHotel ? `
@@ -369,10 +380,10 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     let defaultPrice = null;
                     const pessoasGroup = document.getElementById('nr-pessoas-group');
                     const numPessoasEl = document.getElementById('nr-num-pessoas');
-                    const numPessoas = (pessoasGroup && pessoasGroup.style.display !== 'none' && numPessoasEl && numPessoasEl.value) 
-                        ? parseInt(numPessoasEl.value) 
+                    const numPessoas = (pessoasGroup && pessoasGroup.style.display !== 'none' && numPessoasEl && numPessoasEl.value)
+                        ? parseInt(numPessoasEl.value)
                         : null;
-                    
+
                     let specificPrice = null;
                     let generalPrice = null;
                     let defaultSpecificPrice = null;
@@ -381,7 +392,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     for (let p of (window.currentResourcePrices || [])) {
                         const isDateMatch = p.data_inicio && p.data_fim && cellDate >= new Date(p.data_inicio + 'T00:00:00') && cellDate <= new Date(p.data_fim + 'T23:59:59');
                         const isDefault = !p.data_inicio && !p.data_fim;
-                        
+
                         if (p.num_pessoas === numPessoas) {
                             if (isDateMatch) specificPrice = parseFloat(p.preco_base);
                             if (isDefault) defaultSpecificPrice = parseFloat(p.preco_base);
@@ -844,7 +855,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             const pDrop = document.getElementById('nr-pessoas-dropdown');
             if (pDrop) pDrop.classList.remove('open');
         });
-        
+
         const pessoasDropdown = document.getElementById('nr-pessoas-dropdown');
         if (pessoasDropdown) {
             const pSelectedEl = pessoasDropdown.querySelector('.custom-dropdown-selected');
@@ -876,11 +887,11 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                 const pessoasDropdown = document.getElementById('nr-pessoas-dropdown');
                 const pessoasInput = document.getElementById('nr-num-pessoas');
                 const pessoasText = pessoasDropdown.querySelector('.selected-text');
-                
+
                 if (resObj && resObj.max_pessoas) {
                     const labelText = resObj.label_pessoas || 'Número de Pessoas';
                     const defaultText = `Selecione ${labelText.toLowerCase()}...`;
-                    
+
                     const labelEl = pessoasGroup.querySelector('label');
                     if (labelEl) labelEl.textContent = labelText;
 
@@ -892,7 +903,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     pessoasGroup.style.display = 'block';
                     pessoasInput.value = '';
                     pessoasText.textContent = defaultText;
-                    
+
                     const pOptions = pessoasMenu.querySelectorAll('.custom-option');
                     pOptions.forEach(pOpt => {
                         pOpt.addEventListener('click', (ev) => {
@@ -962,7 +973,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
         const extrasData = window.currentResourceExtras || [];
         const section = document.getElementById('nr-extras-section');
         const container = document.getElementById('nr-extras-container');
-        
+
         const numPessoasEl = document.getElementById('nr-num-pessoas');
         const currentPessoas = (numPessoasEl && numPessoasEl.value) ? parseInt(numPessoasEl.value) : null;
 
@@ -1133,7 +1144,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
         let current = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
         const endDate = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
-        
+
         const pessoasGroup = document.getElementById('nr-pessoas-group');
         const numPessoasEl = document.getElementById('nr-num-pessoas');
         if (pessoasGroup.style.display !== 'none' && !numPessoasEl.value) {
@@ -1141,12 +1152,12 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             precoCalculado = null;
             return;
         }
-        
+
         const numPessoas = pessoasGroup.style.display !== 'none' ? parseInt(numPessoasEl.value) : null;
 
         while (current < endDate) {
             let foundPrice = null;
-            
+
             // 1. Procurar preço específico para a data e número de pessoas
             for (let p of precosData) {
                 if (p.data_inicio && p.data_fim && p.num_pessoas === numPessoas) {
@@ -1155,7 +1166,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     if (current >= pStart && current <= pEnd) { foundPrice = parseFloat(p.preco_base); break; }
                 }
             }
-            
+
             // 2. Procurar preço geral para a data
             if (foundPrice === null) {
                 for (let p of precosData) {
@@ -1166,14 +1177,14 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     }
                 }
             }
-            
+
             // 3. Procurar preço default para o número de pessoas
             if (foundPrice === null) {
                 for (let p of precosData) {
                     if (!p.data_inicio && !p.data_fim && p.num_pessoas === numPessoas) { foundPrice = parseFloat(p.preco_base); break; }
                 }
             }
-            
+
             // 4. Procurar preço default geral
             if (foundPrice === null) {
                 for (let p of precosData) {
@@ -1312,6 +1323,8 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
             cliente_nome: nome,
             cliente_email: email,
             cliente_telemovel: telemovel,
+            cc: document.getElementById('nr-cc').value || null,
+            contribuinte: document.getElementById('nr-contribuinte').value || null,
             data_hora_inicio: inicioISO,
             data_hora_fim: fimISO,
             preco_final: precoCalculado || 0,

@@ -150,6 +150,17 @@ export async function renderReservas(container, session) {
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div class="form-group">
+                            <label>CC / Passaporte</label>
+                            <input type="text" id="editResCC" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>NIF</label>
+                            <input type="text" id="editResContribuinte" class="form-control">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div class="form-group">
                             <label>Início (Data e Hora)</label>
                             <div style="position: relative; display: flex; align-items: center;">
                                 <input type="text" id="editResInicio" class="form-control" placeholder="Selecione data e hora iniciais" required>
@@ -238,13 +249,13 @@ export async function renderReservas(container, session) {
                     </button>
                 </div>`;
             }
-            
+
             const numPessoasBadge = res.num_pessoas ? `<span class="badge" style="background: rgba(255,255,255,0.1); margin-top: 4px; display: inline-block;"><i class="fa-solid fa-user"></i> ${res.num_pessoas}</span>` : '';
 
             html += `
                 <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
                     <td><strong>${escapeHTML(recursoNome)}</strong><br>${numPessoasBadge}${extrasHtmlList}</td>
-                    <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}</small></td>
+                    <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}${res.cc ? `<br>CC/Passaporte: ${escapeHTML(res.cc)}` : ''}${res.contribuinte ? ` | NIF: ${escapeHTML(res.contribuinte)}` : ''}</small></td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
                     <td>${getStatusBadge(res.status)}</td>
@@ -255,6 +266,8 @@ export async function renderReservas(container, session) {
                             data-nome="${escapeHTML(res.cliente_nome)}" 
                             data-email="${escapeHTML(res.cliente_email)}" 
                             data-telemovel="${escapeHTML(res.cliente_telemovel)}" 
+                            data-cc="${escapeHTML(res.cc || '')}"
+                            data-contribuinte="${escapeHTML(res.contribuinte || '')}"
                             data-inicio="${formatForInput(new Date(res.data_hora_inicio))}"
                             data-fim="${formatForInput(new Date(res.data_hora_fim))}"
                             data-preco="${parseFloat(res.preco_final) > 0 ? res.preco_final : ''}"
@@ -335,6 +348,8 @@ export async function renderReservas(container, session) {
                         status: r.status,
                         email: r.cliente_email,
                         telemovel: r.cliente_telemovel,
+                        cc: r.cc,
+                        contribuinte: r.contribuinte,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome,
                         extras: r.extras_selecionados,
@@ -372,7 +387,7 @@ export async function renderReservas(container, session) {
                     const dataRange = info.event.end ? `${formataData(info.event.start)} até ${formataData(info.event.end)}` : formataData(info.event.start);
 
                     const html = `
-                        <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.9rem;">
+                        <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.9rem; max-height: 55vh; overflow-y: auto; padding-right: 8px;">
                             <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <i class="fa-solid fa-user-tag" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Reserva de:</strong> ${escapeHTML(info.event.title)}
@@ -403,6 +418,18 @@ export async function renderReservas(container, session) {
                                 <i class="fa-solid fa-phone" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Telemóvel:</strong> ${escapeHTML(info.event.extendedProps.telemovel)}
                             </li>
+                            ${info.event.extendedProps.cc ? `
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-id-card" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>Nº Identificação:</strong> ${escapeHTML(info.event.extendedProps.cc)}
+                            </li>
+                            ` : ''}
+                            ${info.event.extendedProps.contribuinte ? `
+                            <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <i class="fa-solid fa-file-invoice" style="color: var(--primary-color); width: 25px;"></i> 
+                                <strong>NIF:</strong> ${escapeHTML(info.event.extendedProps.contribuinte)}
+                            </li>
+                            ` : ''}
                             <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <i class="fa-solid fa-money-bill" style="color: var(--primary-color); width: 25px;"></i> 
                                 <strong>Preço:</strong> ${price}
@@ -534,6 +561,8 @@ export async function renderReservas(container, session) {
             document.getElementById('editResNome').value = b.getAttribute('data-nome');
             document.getElementById('editResEmail').value = b.getAttribute('data-email');
             document.getElementById('editResTelemovel').value = b.getAttribute('data-telemovel');
+            document.getElementById('editResCC').value = b.getAttribute('data-cc');
+            document.getElementById('editResContribuinte').value = b.getAttribute('data-contribuinte');
             document.getElementById('editResPreco').value = b.getAttribute('data-preco');
 
             const statusVal = b.getAttribute('data-status');
@@ -585,6 +614,8 @@ export async function renderReservas(container, session) {
             cliente_nome: document.getElementById('editResNome').value,
             cliente_email: document.getElementById('editResEmail').value,
             cliente_telemovel: document.getElementById('editResTelemovel').value,
+            cc: document.getElementById('editResCC').value || null,
+            contribuinte: document.getElementById('editResContribuinte').value || null,
             data_hora_inicio: dataInicio.toISOString(),
             data_hora_fim: dataFim.toISOString(),
             preco_final: document.getElementById('editResPreco').value || 0,
@@ -684,6 +715,8 @@ export async function renderReservas(container, session) {
                         status: r.status,
                         email: r.cliente_email,
                         telemovel: r.cliente_telemovel,
+                        cc: r.cc,
+                        contribuinte: r.contribuinte,
                         preco: r.preco_final,
                         recursoNome: r.recursos?.nome,
                         extras: r.extras_selecionados,
