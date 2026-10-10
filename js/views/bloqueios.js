@@ -1,3 +1,5 @@
+﻿import { syncRecursoBooking } from '../services/ical-service.js';
+
 export async function renderBloqueios(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
 
@@ -95,7 +97,10 @@ export async function renderBloqueios(container, session) {
 
             <!-- SECTION 1: BLOQUEIOS DE PERIODO -->
             <div id="sectionPeriodo">
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" id="btnSyncBookingBloqueios" style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #60a5fa; border-color: rgba(96,165,250,0.3);">
+                        <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Booking
+                    </button>
                     <button class="btn btn-primary" id="btnNovoBloqueio" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Inserir Bloqueio Único</button>
                 </div>
 
@@ -152,17 +157,21 @@ export async function renderBloqueios(container, session) {
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Recurso</th>
+                                                                <th>Recurso</th>
                                 <th>Bloqueado De</th>
                                 <th>Até</th>
+                                <th>Origem</th>
                                 <th style="text-align: right;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
     `;
 
-    const formataDataHora = (isoStr) => {
+    const formataDataHora = (isoStr, apenasData = false) => {
         const d = new Date(isoStr);
+        if (apenasData) {
+            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
         return d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
@@ -176,20 +185,28 @@ export async function renderBloqueios(container, session) {
                 return off.replace('T', ' ');
             };
 
+            const isBooking = bloq.origem === 'booking';
+            const origemBadge = isBooking
+                ? `<span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>`
+                : `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);">Manual</span>`;
+
             html += `
                 <tr class="bloqueio-row" data-recurso="${escapeHTML(recursoNome)}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
-                    <td>${formataDataHora(bloq.data_hora_inicio)}</td>
-                    <td>${formataDataHora(bloq.data_hora_fim)}</td>
+                    <td>${formataDataHora(bloq.data_hora_inicio, isBooking)}</td>
+                    <td>${formataDataHora(bloq.data_hora_fim, isBooking)}</td>
+                    <td>${origemBadge}</td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-edit-bloqueio" data-id="${bloq.id}" data-empresa="${bloq.empresa_id}" data-recurso="${bloq.recurso_id}" data-inicio="${formatForInput(inicioISO)}" data-fim="${formatForInput(fimISO)}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-secondary btn-delete-bloqueio" data-id="${bloq.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                        ${!isBooking ? `
+                            <button class="btn btn-secondary btn-edit-bloqueio" data-id="${bloq.id}" data-empresa="${bloq.empresa_id}" data-recurso="${bloq.recurso_id}" data-inicio="${formatForInput(inicioISO)}" data-fim="${formatForInput(fimISO)}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        ` : ''}
+                        <button class="btn btn-secondary btn-delete-bloqueio" data-id="${bloq.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
             `;
         });
     } else {
-        html += `<tr><td colspan="4">Nenhum bloqueio periódico configurado.</td></tr>`;
+        html += `<tr><td colspan="5">Nenhum bloqueio periódico configurado.</td></tr>`;
     }
 
     html += `           </tbody>
@@ -307,7 +324,7 @@ export async function renderBloqueios(container, session) {
             `;
         });
     } else {
-        html += `<tr><td colspan="4">Nenhum bloqueio fixo semanal configurado.</td></tr>`;
+        html += `<tr><td colspan="5">Nenhum bloqueio fixo semanal configurado.</td></tr>`;
     }
 
     html += `           </tbody>
@@ -324,6 +341,35 @@ export async function renderBloqueios(container, session) {
 }
 
 function setupBloqueiosListeners(meusRecursos) {
+    // --- Sincronizar Booking ---
+    const btnSyncBooking = document.getElementById('btnSyncBookingBloqueios');
+    if (btnSyncBooking) {
+        btnSyncBooking.addEventListener('click', async () => {
+            const icon = btnSyncBooking.querySelector('i');
+            icon.className = 'fa-solid fa-spinner fa-spin';
+            btnSyncBooking.disabled = true;
+
+            let totalEvents = 0;
+            let countSynced = 0;
+
+            for (const rec of (meusRecursos || [])) {
+                try {
+                    const res = await syncRecursoBooking(rec.id);
+                    countSynced++;
+                    totalEvents += (res.eventsCount !== undefined ? res.eventsCount : (res.report?.[0]?.eventsFound || 0));
+                } catch (e) {
+                    // Ignora silenciosamente recursos sem iCal configurado
+                }
+            }
+
+            icon.className = 'fa-solid fa-arrows-rotate';
+            btnSyncBooking.disabled = false;
+
+            window.showAlertModal('Sincronização com o Booking', `Sincronização concluída! ${totalEvents} bloqueios atualizados do Booking.`);
+            setTimeout(() => document.querySelector('[data-view="bloqueios"]').click(), 1000);
+        });
+    }
+
     // --- Tabs Switching ---
     const btnSectionP = document.getElementById('btnViewPeriodo');
     const btnSectionR = document.getElementById('btnViewRecorrente');
@@ -703,3 +749,4 @@ function escapeHTML(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag] || tag));
 }
+

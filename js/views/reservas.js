@@ -20,14 +20,41 @@ export async function renderReservas(container, session) {
         .eq('empresa_id', empId)
         .order('data_hora_inicio', { ascending: false });
 
+    const { data: bookingBloqueios } = await window.supabase
+        .from('bloqueios_disponibilidade')
+        .select(`*, recursos(nome)`)
+        .eq('empresa_id', empId)
+        .eq('origem', 'booking')
+        .order('data_hora_inicio', { ascending: false });
+
     if (error) {
         container.innerHTML = `<div class="glass-panel" style="padding: 2rem; color: var(--danger);">Erro a carregar reservas: ${error.message}</div>`;
         return;
     }
 
+    // Combinar reservas manuais/locais com reservas do Booking
+    const todosRegistos = [
+        ...(reservas || []).map(r => ({ ...r, isBooking: false })),
+        ...(bookingBloqueios || []).map(b => ({
+            id: b.id,
+            isBooking: true,
+            origem: 'booking',
+            data_hora_inicio: b.data_hora_inicio,
+            data_hora_fim: b.data_hora_fim,
+            status: 'booking',
+            recursos: b.recursos,
+            cliente_nome: '',
+            cliente_email: '',
+            cliente_telemovel: '',
+            preco_final: null
+        }))
+    ].sort((a, b) => new Date(b.data_hora_inicio) - new Date(a.data_hora_inicio));
+
     // Build Overview
     const countPendentes = reservas ? reservas.filter(r => r.status === 'pendente').length : 0;
     const countConfirmadas = reservas ? reservas.filter(r => r.status === 'confirmada').length : 0;
+    const countBooking = bookingBloqueios ? bookingBloqueios.length : 0;
+
 
     let html = `
         <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
@@ -52,6 +79,10 @@ export async function renderReservas(container, session) {
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--success);">
                     <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Confirmadas</h5>
                     <div id="overviewConfirmadas" style="font-size: 1.5rem; font-weight: 700;">${countConfirmadas}</div>
+                </div>
+                <div id="cardOverviewBooking" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid #3b82f6; ${countBooking === 0 ? 'display: none;' : ''}">
+                    <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Booking</h5>
+                    <div id="overviewBooking" style="font-size: 1.5rem; font-weight: 700;">${countBooking}</div>
                 </div>
             </div>
 
@@ -99,6 +130,7 @@ export async function renderReservas(container, session) {
                                 <div class="custom-option active" data-value="">Todos os Estados</div>
                                 <div class="custom-option" data-value="pendente">Pendente</div>
                                 <div class="custom-option" data-value="confirmada">Confirmada</div>
+                                <div class="custom-option" data-value="booking">Booking</div>
                             </div>
                         </div>
                     </div>
@@ -221,20 +253,39 @@ export async function renderReservas(container, session) {
                     <tbody>
     `;
 
-    const formataDataHora = (isoStr) => {
+    const formataDataHora = (isoStr, apenasData = false) => {
         const d = new Date(isoStr);
+        if (apenasData) {
+            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
         return d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
     const getStatusBadge = (status) => {
+        if (status === 'booking') return '<span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>';
         if (status === 'confirmada') return '<span class="badge badge-success">Confirmada</span>';
         if (status === 'rejeitada' || status === 'cancelada') return '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Rejeitada</span>';
         return '<span class="badge badge-warning">Pendente</span>';
     };
 
-    if (reservas && reservas.length > 0) {
-        reservas.forEach(res => {
+    if (todosRegistos && todosRegistos.length > 0) {
+        todosRegistos.forEach(res => {
             const recursoNome = res.recursos ? res.recursos.nome : 'N/A';
+
+            if (res.isBooking) {
+                html += `
+                    <tr class="reserva-row" data-cliente="booking" data-recurso="${escapeHTML(recursoNome)}" data-estado="booking" data-inicio="${res.data_hora_inicio}" style="background: rgba(37, 99, 235, 0.04);">
+                        <td><strong>${escapeHTML(recursoNome)}</strong></td>
+                        <td><span class="text-sub">--</span></td>
+                        <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio, true)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim, true)}</td>
+                        <td><span class="text-sub">--</span></td>
+                        <td>${getStatusBadge('booking')}</td>
+                        <td style="text-align: right;"><span class="text-sub">--</span></td>
+                    </tr>
+                `;
+                return;
+            }
+
             const formatForInput = (d) => {
                 const off = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                 return off.replace('T', ' ');
@@ -311,6 +362,48 @@ export async function renderReservas(container, session) {
     const overview = document.getElementById('reservasOverview');
     let calendar; // to hold FullCalendar instance
 
+    const buildCalendarEvent = (item) => {
+        if (item.isBooking) {
+            const recNome = item.recursos ? item.recursos.nome : 'Recurso Removido';
+            return {
+                id: 'booking-' + item.id,
+                title: `[Booking] ${recNome}`,
+                start: item.data_hora_inicio,
+                end: item.data_hora_fim,
+                backgroundColor: '#2563eb',
+                borderColor: 'transparent',
+                extendedProps: {
+                    isBooking: true,
+                    status: 'Booking',
+                    recursoNome: recNome
+                }
+            };
+        }
+        let color = '#fbbf24'; // pendente
+        if (item.status === 'confirmada') color = '#34d399';
+        if (item.status === 'rejeitada' || item.status === 'cancelada') color = '#ef4444';
+        return {
+            id: item.id,
+            title: `${item.cliente_nome} (${item.recursos?.nome})`,
+            start: item.data_hora_inicio,
+            end: item.data_hora_fim,
+            backgroundColor: color,
+            borderColor: 'transparent',
+            extendedProps: {
+                isBooking: false,
+                status: item.status,
+                email: item.cliente_email,
+                telemovel: item.cliente_telemovel,
+                cc: item.cc,
+                contribuinte: item.contribuinte,
+                preco: item.preco_final,
+                recursoNome: item.recursos?.nome,
+                extras: item.extras_selecionados,
+                numPessoas: item.num_pessoas
+            }
+        };
+    };
+
     btnList.addEventListener('click', () => {
         btnList.style.background = 'var(--primary-color)';
         btnList.style.color = '#fff';
@@ -333,30 +426,7 @@ export async function renderReservas(container, session) {
         // Render calendar if not yet rendered
         if (!calendar) {
             const calendarEl = document.getElementById('calendarEl');
-            const events = reservas.map(r => {
-                let color = '#fbbf24'; // pendente
-                if (r.status === 'confirmada') color = '#34d399';
-                if (r.status === 'rejeitada' || r.status === 'cancelada') color = '#ef4444';
-                return {
-                    id: r.id,
-                    title: `${r.cliente_nome} (${r.recursos?.nome})`,
-                    start: r.data_hora_inicio,
-                    end: r.data_hora_fim,
-                    backgroundColor: color,
-                    borderColor: 'transparent',
-                    extendedProps: {
-                        status: r.status,
-                        email: r.cliente_email,
-                        telemovel: r.cliente_telemovel,
-                        cc: r.cc,
-                        contribuinte: r.contribuinte,
-                        preco: r.preco_final,
-                        recursoNome: r.recursos?.nome,
-                        extras: r.extras_selecionados,
-                        numPessoas: r.num_pessoas
-                    }
-                };
-            });
+            const events = todosRegistos.map(buildCalendarEvent);
 
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
@@ -378,6 +448,35 @@ export async function renderReservas(container, session) {
                 },
                 events: events,
                 eventClick: function (info) {
+                    if (info.event.extendedProps.isBooking) {
+                        const formataDataApenas = (d) => {
+                            if (!d) return '';
+                            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        };
+                        const htmlBooking = `
+                            <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.9rem;">
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-solid fa-cube" style="color: #60a5fa; width: 25px;"></i> 
+                                    <strong>Recurso:</strong> ${escapeHTML(info.event.extendedProps.recursoNome)}
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-solid fa-hotel" style="color: #60a5fa; width: 25px;"></i> 
+                                    <strong>Estado:</strong> <span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-regular fa-calendar-check" style="color: #60a5fa; width: 25px;"></i> 
+                                    <strong>Check-in:</strong> ${formataDataApenas(info.event.start)}
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem;">
+                                    <i class="fa-regular fa-calendar-times" style="color: #60a5fa; width: 25px;"></i> 
+                                    <strong>Check-out:</strong> ${info.event.end ? formataDataApenas(info.event.end) : formataDataApenas(info.event.start)}
+                                </li>
+                            </ul>
+                        `;
+                        window.showInfoModal('Reserva Booking.com', htmlBooking);
+                        return;
+                    }
+
                     const price = parseFloat(info.event.extendedProps.preco) > 0 ? info.event.extendedProps.preco + '€' : '--';
 
                     const formataData = (d) => {
@@ -647,6 +746,7 @@ export async function renderReservas(container, session) {
 
         let currentCountPendentes = 0;
         let currentCountConfirmadas = 0;
+        let currentCountBooking = 0;
 
         // Filter Table Rows
         document.querySelectorAll('#viewListContainer tbody tr.reserva-row').forEach(tr => {
@@ -674,15 +774,16 @@ export async function renderReservas(container, session) {
             if (show) {
                 if (estado === 'pendente') currentCountPendentes++;
                 if (estado === 'confirmada') currentCountConfirmadas++;
+                if (estado === 'booking') currentCountBooking++;
             }
         });
 
         // Filter Calendar
         if (calendar) {
-            const filteredEvents = reservas.filter(r => {
-                const cliente = (r.cliente_nome + ' ' + (r.cliente_email || '') + ' ' + (r.cliente_telemovel || '')).toLowerCase();
+            const filteredEvents = todosRegistos.filter(r => {
+                const cliente = r.isBooking ? 'booking' : (((r.cliente_nome || '') + ' ' + (r.cliente_email || '') + ' ' + (r.cliente_telemovel || '')).toLowerCase());
                 const recurso = r.recursos ? r.recursos.nome.toLowerCase() : '';
-                const estado = r.status.toLowerCase();
+                const estado = (r.status || '').toLowerCase();
                 const reservaInicioTime = new Date(r.data_hora_inicio).getTime();
 
                 let show = true;
@@ -700,30 +801,7 @@ export async function renderReservas(container, session) {
                 if (fimTime && reservaInicioTime > fimTime) show = false;
 
                 return show;
-            }).map(r => {
-                let color = '#fbbf24';
-                if (r.status === 'confirmada') color = '#34d399';
-                if (r.status === 'rejeitada' || r.status === 'cancelada') color = '#ef4444';
-                return {
-                    id: r.id,
-                    title: `${r.cliente_nome} (${r.recursos?.nome})`,
-                    start: r.data_hora_inicio,
-                    end: r.data_hora_fim,
-                    backgroundColor: color,
-                    borderColor: 'transparent',
-                    extendedProps: {
-                        status: r.status,
-                        email: r.cliente_email,
-                        telemovel: r.cliente_telemovel,
-                        cc: r.cc,
-                        contribuinte: r.contribuinte,
-                        preco: r.preco_final,
-                        recursoNome: r.recursos?.nome,
-                        extras: r.extras_selecionados,
-                        numPessoas: r.num_pessoas
-                    }
-                };
-            });
+            }).map(buildCalendarEvent);
 
             calendar.removeAllEvents();
             calendar.addEventSource(filteredEvents);
@@ -731,6 +809,12 @@ export async function renderReservas(container, session) {
 
         document.getElementById('overviewPendentes').textContent = currentCountPendentes;
         document.getElementById('overviewConfirmadas').textContent = currentCountConfirmadas;
+        const ovBookingEl = document.getElementById('overviewBooking');
+        if (ovBookingEl) ovBookingEl.textContent = currentCountBooking;
+        const cardBookingEl = document.getElementById('cardOverviewBooking');
+        if (cardBookingEl) {
+            cardBookingEl.style.display = currentCountBooking > 0 ? '' : 'none';
+        }
     };
 
     // Filter logic UI setup

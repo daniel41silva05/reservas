@@ -1,9 +1,33 @@
-import { renderEmpresas } from './views/empresas.js';
+﻿import { renderEmpresas } from './views/empresas.js';
 import { renderRecursos } from './views/recursos.js';
 import { renderPrecos } from './views/precos.js';
 import { renderBloqueios } from './views/bloqueios.js';
 import { renderReservas } from './views/reservas.js';
 import { renderExtras } from './views/extras.js';
+import { syncRecursoBooking } from './services/ical-service.js';
+
+async function checkDailyAutoSync(empresaId) {
+    if (!empresaId || !window.supabase) return;
+    try {
+        const { data: recursosComIcal } = await window.supabase
+            .from('recursos')
+            .select('id, ical_last_sync')
+            .eq('empresa_id', empresaId)
+            .not('ical_import_url', 'is', null);
+
+        if (!recursosComIcal || recursosComIcal.length === 0) return;
+
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+
+        for (const r of recursosComIcal) {
+            const lastSync = r.ical_last_sync ? new Date(r.ical_last_sync) : null;
+            if (!lastSync || lastSync < todayMidnight) {
+                syncRecursoBooking(r.id).catch(console.warn);
+            }
+        }
+    } catch (_) {}
+}
 
 window.dashboardContext = {
     isAdmin: false,
@@ -187,6 +211,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
+        
+        // Verifica se é necessária sincronização automática do Booking (diária)
+        checkDailyAutoSync(window.dashboardContext.currentEmpresaId);
     }
 
     // Load context for the first time

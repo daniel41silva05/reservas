@@ -1,4 +1,4 @@
-export async function renderNovaReservaWidget(container, session) {
+﻿export async function renderNovaReservaWidget(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
     const isHotel = window.dashboardContext.currentEmpresaTipo &&
         window.dashboardContext.currentEmpresaTipo.toLowerCase() === 'hotel';
@@ -727,7 +727,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
         // Fetch occasional blocks
         const { data: bloqueios } = await window.supabase
             .from('bloqueios_disponibilidade')
-            .select('data_hora_inicio, data_hora_fim')
+            .select('data_hora_inicio, data_hora_fim, origem')
             .eq('recurso_id', recursoId);
 
         // Fetch recurring blocks
@@ -771,7 +771,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
         if (bloqueios) {
             bloqueios.forEach(b => {
                 window.nrBlockedRanges.push({
-                    type: 'bloqueio',
+                    type: b.origem === 'booking' ? 'reserva' : 'bloqueio',
                     start: new Date(b.data_hora_inicio),
                     end: new Date(b.data_hora_fim)
                 });
