@@ -1,4 +1,4 @@
-﻿export async function renderNovaReservaWidget(container, session) {
+export async function renderNovaReservaWidget(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
     const isHotel = window.dashboardContext.currentEmpresaTipo &&
         window.dashboardContext.currentEmpresaTipo.toLowerCase() === 'hotel';
@@ -57,24 +57,231 @@
     // 2. Build the UI
     let html = `
         <style>
+            /* Calendar Container & Full Width Responsiveness */
+            .nr-widget-panel {
+                padding: 1.5rem;
+            }
+            #nr-calendar-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+            #nr-calendar-container .fc {
+                width: 100% !important;
+                max-width: 100% !important;
+                font-family: inherit;
+            }
+            #nr-calendar-container .fc-view-harness {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow: visible !important;
+            }
+            #nr-calendar-container .fc-scrollgrid,
+            #nr-calendar-container .fc-scrollgrid-sync-table,
+            #nr-calendar-container .fc-col-header {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+            }
+            #nr-calendar-container table {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+
+            /* Toolbar Header */
+            #nr-calendar-container .fc-toolbar {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                gap: 0.35rem !important;
+                margin-bottom: 0.75rem !important;
+                flex-wrap: nowrap !important;
+            }
+            #nr-calendar-container .fc-toolbar-title {
+                color: var(--text-main, #e2e8f0) !important;
+                font-size: clamp(0.85rem, 3.2vw, 1.1rem) !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                letter-spacing: -0.2px;
+            }
+            #nr-calendar-container .fc-toolbar-chunk {
+                display: flex !important;
+                align-items: center !important;
+                gap: 4px !important;
+            }
+            #nr-calendar-container .fc-button {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                color: var(--text-main, #e2e8f0) !important;
+                padding: 0.35rem 0.65rem !important;
+                font-size: clamp(0.72rem, 2.4vw, 0.85rem) !important;
+                border-radius: 8px !important;
+                box-shadow: none !important;
+                font-weight: 500 !important;
+                transition: all 0.2s ease !important;
+            }
+            #nr-calendar-container .fc-button:hover {
+                background: rgba(255, 255, 255, 0.16) !important;
+            }
+            #nr-calendar-container .fc-button-primary:not(:disabled).fc-button-active,
+            #nr-calendar-container .fc-button-primary:not(:disabled):active {
+                background: var(--primary-color, #6366f1) !important;
+                border-color: var(--primary-color, #6366f1) !important;
+            }
+
+            /* Weekday Headers (Seg, Ter, Qua...) */
             #nr-calendar-container .fc-col-header-cell {
                 background-color: var(--surface-color) !important;
+                border-color: var(--glass-border-color, rgba(255, 255, 255, 0.08)) !important;
+                padding: 6px 0 !important;
             }
             #nr-calendar-container .fc-col-header-cell-cushion {
-                color: var(--text-main) !important;
+                color: var(--text-muted, #94a3b8) !important;
+                text-decoration: none !important;
+                font-size: clamp(0.68rem, 2.2vw, 0.82rem) !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.4px !important;
+                display: block !important;
+                text-align: center !important;
+                padding: 2px 1px !important;
             }
+
+            /* Day Grid Cells */
+            #nr-calendar-container .fc-daygrid-day {
+                border-color: var(--glass-border-color, rgba(255, 255, 255, 0.07)) !important;
+                padding: 0 !important;
+            }
+            #nr-calendar-container .fc-daygrid-day-frame {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                min-height: 48px !important;
+                padding: 4px 1px !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                transition: background-color 0.15s ease;
+            }
+            #nr-calendar-container .fc-daygrid-day-top {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+                padding: 0 !important;
+                float: none !important;
+            }
+            #nr-calendar-container .fc-daygrid-day-events {
+                min-height: 0 !important;
+                margin: 0 !important;
+            }
+            #nr-calendar-container .fc-daygrid-day-bottom {
+                font-size: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Day Cell Typography & Spacing */
+            #nr-calendar-container .nr-cell-day {
+                font-size: clamp(0.75rem, 2.5vw, 0.88rem);
+                font-weight: 600;
+                line-height: 1.2;
+                color: var(--text-main, #e2e8f0);
+                display: block;
+                text-align: center;
+                transition: transform 0.15s ease;
+            }
+            #nr-calendar-container .nr-cell-price {
+                font-size: clamp(0.62rem, 2vw, 0.75rem);
+                font-weight: 700;
+                color: var(--success, #10b981);
+                line-height: 1.1;
+                margin-top: 2px;
+                display: block;
+                text-align: center;
+                white-space: nowrap;
+                letter-spacing: -0.3px;
+            }
+
+            /* Today Highlight */
+            #nr-calendar-container .fc-day-today {
+                background: rgba(var(--primary-color-rgb, 99, 102, 241), 0.08) !important;
+            }
+            #nr-calendar-container .fc-day-today .nr-cell-day {
+                color: var(--primary-color, #6366f1) !important;
+                font-weight: 800;
+            }
+
+            /* Available Days Hover */
+            #nr-calendar-container .nr-day-available:not(.fc-day-other):hover .fc-daygrid-day-frame {
+                background: rgba(52, 211, 153, 0.14) !important;
+                border-radius: 6px;
+            }
+            #nr-calendar-container .nr-day-available:not(.fc-day-other):hover .nr-cell-day {
+                transform: scale(1.08);
+            }
+
+            /* Blocked Day Cells */
+            #nr-calendar-container .nr-day-blocked {
+                pointer-events: none !important;
+                opacity: 0.5 !important;
+            }
+            #nr-calendar-container .nr-blocked-badge {
+                position: absolute;
+                bottom: 2px;
+                right: 3px;
+                font-size: 0.6rem;
+                color: rgba(239, 68, 68, 0.8);
+                line-height: 1;
+                pointer-events: none;
+            }
+
+            /* Selected Range Background */
+            #nr-calendar-container .fc-bg-event {
+                opacity: 0.38 !important;
+                border-radius: 4px;
+            }
+
+            /* Responsive tweaks for smaller screens */
             @media (max-width: 768px) {
-                #nr-calendar-container .fc-view-harness {
-                    overflow-x: auto !important;
-                    -webkit-overflow-scrolling: touch;
-                    width: 100%;
+                .nr-widget-panel {
+                    padding: 1rem 0.65rem !important;
                 }
-                #nr-calendar-container .fc-scrollgrid {
-                    min-width: 600px !important;
+                #nr-calendar-container {
+                    padding: 8px 4px !important;
+                    min-height: auto !important;
+                }
+                #nr-calendar-container .fc-daygrid-day-frame {
+                    min-height: 44px !important;
+                    padding: 3px 1px !important;
+                }
+                #nr-calendar-container .fc-col-header-cell {
+                    padding: 4px 0 !important;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .nr-widget-panel {
+                    padding: 0.85rem 0.4rem !important;
+                }
+                #nr-calendar-container {
+                    padding: 6px 2px !important;
+                }
+                #nr-calendar-container .fc-daygrid-day-frame {
+                    min-height: 40px !important;
+                    padding: 2px 0px !important;
+                }
+                #nr-calendar-container .nr-cell-price {
+                    margin-top: 1px;
                 }
             }
         </style>
-        <div class="glass-panel" style="padding: 1.5rem; width: 100%; margin: 0 auto;">
+        <div class="glass-panel nr-widget-panel" style="width: 100%; margin: 0 auto;">
             <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
                 <h3>Nova Reserva</h3>
             </div>
@@ -168,8 +375,8 @@
                 </div>
 
                 <!-- CALENDÁRIO -->
-                <div class="form-group" style="margin-bottom: 1rem; position: relative; max-width: 100%; overflow-x: clip;">
-                    <div id="nr-calendar-container" style="background: var(--glass-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); min-height: 400px; max-width: 100%; overflow-x: clip;"></div>
+                <div class="form-group" style="margin-bottom: 1rem; position: relative; max-width: 100%;">
+                    <div id="nr-calendar-container" style="background: var(--glass-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); min-height: 380px; max-width: 100%; width: 100%; box-sizing: border-box;"></div>
                 </div>
 
                 <!-- EXTRAS (Hotel Only) -->
@@ -357,9 +564,12 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                 initialView: 'dayGridMonth',
                 locale: 'pt',
                 headerToolbar: {
-                    left: 'prev,next today',
+                    left: 'prev,next',
                     center: 'title',
-                    right: 'dayGridMonth'
+                    right: 'today'
+                },
+                buttonText: {
+                    today: 'Hoje'
                 },
                 selectable: false,
                 height: 'auto',
@@ -372,7 +582,7 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
                     if (blocked) {
                         if (reason === 'past') return { html: '' };
-                        return { html: `<div class="fc-daygrid-day-number">${text}</div>` };
+                        return { html: `<span class="nr-cell-day fc-daygrid-day-number">${text}</span>` };
                     }
 
                     // Show price on available days
@@ -412,10 +622,10 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
 
                     if (priceToShow !== null) {
                         return {
-                            html: `<div class="fc-daygrid-day-number">${text}</div><div style="font-size: 0.78em; color: var(--success); text-align: center; margin-top: 2px; font-weight: bold;">${priceToShow}€/noite</div>`
+                            html: `<span class="nr-cell-day fc-daygrid-day-number">${text}</span><span class="nr-cell-price">${priceToShow}€</span>`
                         };
                     }
-                    return { html: `<div class="fc-daygrid-day-number">${text}</div>` };
+                    return { html: `<span class="nr-cell-day fc-daygrid-day-number">${text}</span>` };
                 },
 
                 // Apply blocked styling to cells after mount
@@ -541,6 +751,9 @@ function setupWidgetListeners(empId, isHotel, isExternalWidget, recursos) {
                     left: 'prev,next today',
                     center: 'title',
                     right: ''
+                },
+                buttonText: {
+                    today: 'Hoje'
                 },
                 selectable: true,
                 selectMirror: true,

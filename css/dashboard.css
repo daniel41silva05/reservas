@@ -827,26 +827,43 @@ input[type="number"].form-control {
 
     /* FullCalendar mobile */
     .fc .fc-toolbar {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0.35rem;
+        align-items: center;
+        flex-wrap: nowrap;
     }
 
     .fc .fc-toolbar-title {
-        font-size: 0.95rem !important;
+        font-size: clamp(0.85rem, 3.2vw, 1rem) !important;
     }
 
     .fc .fc-button {
-        padding: 0.3rem 0.6rem !important;
-        font-size: 0.8rem !important;
+        padding: 0.3rem 0.55rem !important;
+        font-size: 0.78rem !important;
     }
 
-    .fc .fc-view-harness {
+    /* Widget calendar fits 100% full width - no horizontal scroll needed */
+    #nr-calendar-container .fc-view-harness {
+        overflow-x: visible !important;
+        width: 100% !important;
+    }
+
+    #nr-calendar-container .fc-scrollgrid,
+    #nr-calendar-container .fc-scrollgrid-sync-table,
+    #nr-calendar-container .fc-col-header {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+
+    /* Admin overview calendar with many events scrolls horizontally if needed */
+    #calendarEl .fc-view-harness {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
     }
 
-    .fc .fc-scrollgrid {
+    #calendarEl .fc-scrollgrid {
         min-width: 600px !important;
     }
 
