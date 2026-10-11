@@ -304,9 +304,26 @@ export async function renderReservas(container, session) {
             const numPessoasBadge = res.num_pessoas ? `<span class="badge" style="background: rgba(255,255,255,0.1); margin-top: 4px; display: inline-block;"><i class="fa-solid fa-user"></i> ${res.num_pessoas}</span>` : '';
 
             html += `
-                <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
+                <tr class="reserva-row" data-cliente="${escapeHTML(res.cliente_nome)} ${escapeHTML(res.cliente_email)} ${escapeHTML(res.cliente_telemovel)} ${escapeHTML(res.cc || '')} ${escapeHTML(res.contribuinte || '')}" data-recurso="${escapeHTML(recursoNome)}" data-estado="${res.status}" data-inicio="${res.data_hora_inicio}" style="${res.status === 'pendente' ? 'background: rgba(245, 158, 11, 0.05);' : ''}">
                     <td><strong>${escapeHTML(recursoNome)}</strong><br>${numPessoasBadge}${extrasHtmlList}</td>
-                    <td>${escapeHTML(res.cliente_nome)}<br><small class="text-sub">${escapeHTML(res.cliente_email)} | ${escapeHTML(res.cliente_telemovel)}${res.cc ? `<br>CC/Passaporte: ${escapeHTML(res.cc)}` : ''}${res.contribuinte ? ` | NIF: ${escapeHTML(res.contribuinte)}` : ''}</small></td>
+                    <td>
+                        <div style="font-weight: 600;">${escapeHTML(res.cliente_nome || '--')}</div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+                            <i class="fa-solid fa-phone" style="font-size: 0.72rem; margin-right: 4px; opacity: 0.7;"></i>${escapeHTML(res.cliente_telemovel || '--')}
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <button type="button" class="btn btn-secondary btn-show-client-info"
+                                data-nome="${escapeHTML(res.cliente_nome || '')}"
+                                data-telemovel="${escapeHTML(res.cliente_telemovel || '')}"
+                                data-email="${escapeHTML(res.cliente_email || '')}"
+                                data-cc="${escapeHTML(res.cc || '')}"
+                                data-contribuinte="${escapeHTML(res.contribuinte || '')}"
+                                style="padding: 0.2rem 0.55rem; font-size: 0.75rem; min-width: auto; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 4px;"
+                                title="Ver mais informações do cliente">
+                                <i class="fa-solid fa-circle-info" style="color: var(--primary-color);"></i> Ver mais info
+                            </button>
+                        </div>
+                    </td>
                     <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim)}</td>
                     <td><strong>${(res.preco_final && parseFloat(res.preco_final) > 0) ? parseFloat(res.preco_final).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : '<span class="text-sub">--</span>'}</strong></td>
                     <td>${getStatusBadge(res.status)}</td>
@@ -570,6 +587,43 @@ export async function renderReservas(container, session) {
             } catch (err) {
                 console.error("Erro a ler extras", err);
             }
+        });
+    });
+
+    document.querySelectorAll('.btn-show-client-info').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const b = e.currentTarget;
+            const nome = b.getAttribute('data-nome');
+            const telemovel = b.getAttribute('data-telemovel');
+            const email = b.getAttribute('data-email');
+            const cc = b.getAttribute('data-cc');
+            const contribuinte = b.getAttribute('data-contribuinte');
+
+            const html = `
+                <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.95rem;">
+                    <li style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-user" style="color: var(--primary-color); width: 25px;"></i> 
+                        <strong>Nome:</strong> ${escapeHTML(nome) || '<span class="text-sub">Não indicado</span>'}
+                    </li>
+                    <li style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-phone" style="color: var(--primary-color); width: 25px;"></i> 
+                        <strong>Telemóvel:</strong> ${telemovel ? `<a href="tel:${escapeHTML(telemovel)}" style="color: var(--primary-color); text-decoration: none;">${escapeHTML(telemovel)}</a>` : '<span class="text-sub">Não indicado</span>'}
+                    </li>
+                    <li style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-envelope" style="color: var(--primary-color); width: 25px;"></i> 
+                        <strong>Email:</strong> ${email ? `<a href="mailto:${escapeHTML(email)}" style="color: var(--primary-color); text-decoration: none;">${escapeHTML(email)}</a>` : '<span class="text-sub">Não indicado</span>'}
+                    </li>
+                    <li style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-id-card" style="color: var(--primary-color); width: 25px;"></i> 
+                        <strong>CC / Passaporte:</strong> ${escapeHTML(cc) || '<span class="text-sub">Não indicado</span>'}
+                    </li>
+                    <li style="margin-bottom: 0.4rem; padding-bottom: 0.4rem;">
+                        <i class="fa-solid fa-file-invoice" style="color: var(--primary-color); width: 25px;"></i> 
+                        <strong>NIF / Contribuinte:</strong> ${escapeHTML(contribuinte) || '<span class="text-sub">Não indicado</span>'}
+                    </li>
+                </ul>
+            `;
+            window.showInfoModal('Informações do Cliente', html);
         });
     });
 

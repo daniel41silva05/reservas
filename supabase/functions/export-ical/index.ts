@@ -69,12 +69,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Procurar reservas confirmadas
+    // 2. Procurar reservas confirmadas ou pendentes
     const { data: reservas, error: resError } = await supabase
       .from("reservas")
       .select("id, data_hora_inicio, data_hora_fim, status, cliente_nome")
       .eq("recurso_id", recurso.id)
-      .eq("status", "confirmada");
+      .in("status", ["confirmada", "pendente"]);
 
     // 3. Procurar bloqueios manuais
     const { data: bloqueios, error: bloqError } = await supabase
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       `X-WR-CALNAME:${escapeICS(recurso.nome)}`,
     ];
 
-    // Adiciona Reservas Confirmadas
+    // Adiciona Reservas Confirmadas e Pendentes
     if (reservas && reservas.length > 0) {
       for (const res of reservas) {
         const startDate = formatICSDate(res.data_hora_inicio);
