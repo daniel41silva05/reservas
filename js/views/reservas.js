@@ -20,11 +20,11 @@ export async function renderReservas(container, session) {
         .eq('empresa_id', empId)
         .order('data_hora_inicio', { ascending: false });
 
-    const { data: bookingBloqueios } = await window.supabase
+    const { data: canaisBloqueios } = await window.supabase
         .from('bloqueios_disponibilidade')
         .select(`*, recursos(nome)`)
         .eq('empresa_id', empId)
-        .eq('origem', 'booking')
+        .in('origem', ['booking', 'airbnb'])
         .order('data_hora_inicio', { ascending: false });
 
     if (error) {
@@ -32,16 +32,17 @@ export async function renderReservas(container, session) {
         return;
     }
 
-    // Combinar reservas manuais/locais com reservas do Booking
+    // Combinar reservas manuais/locais com reservas externas (Booking e Airbnb)
     const todosRegistos = [
-        ...(reservas || []).map(r => ({ ...r, isBooking: false })),
-        ...(bookingBloqueios || []).map(b => ({
+        ...(reservas || []).map(r => ({ ...r, isBooking: false, isAirbnb: false })),
+        ...(canaisBloqueios || []).map(b => ({
             id: b.id,
-            isBooking: true,
-            origem: 'booking',
+            isBooking: b.origem === 'booking',
+            isAirbnb: b.origem === 'airbnb',
+            origem: b.origem,
             data_hora_inicio: b.data_hora_inicio,
             data_hora_fim: b.data_hora_fim,
-            status: 'booking',
+            status: b.origem,
             recursos: b.recursos,
             cliente_nome: '',
             cliente_email: '',
@@ -53,8 +54,8 @@ export async function renderReservas(container, session) {
     // Build Overview
     const countPendentes = reservas ? reservas.filter(r => r.status === 'pendente').length : 0;
     const countConfirmadas = reservas ? reservas.filter(r => r.status === 'confirmada').length : 0;
-    const countBooking = bookingBloqueios ? bookingBloqueios.length : 0;
-
+    const countBooking = canaisBloqueios ? canaisBloqueios.filter(b => b.origem === 'booking').length : 0;
+    const countAirbnb = canaisBloqueios ? canaisBloqueios.filter(b => b.origem === 'airbnb').length : 0;
 
     let html = `
         <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
@@ -71,7 +72,7 @@ export async function renderReservas(container, session) {
                 </div>
             </div>
 
-            <div id="reservasOverview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div id="reservasOverview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--warning);">
                     <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Pendentes</h5>
                     <div id="overviewPendentes" style="font-size: 1.5rem; font-weight: 700;">${countPendentes}</div>
@@ -82,7 +83,11 @@ export async function renderReservas(container, session) {
                 </div>
                 <div id="cardOverviewBooking" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid #3b82f6; ${countBooking === 0 ? 'display: none;' : ''}">
                     <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Booking</h5>
-                    <div id="overviewBooking" style="font-size: 1.5rem; font-weight: 700;">${countBooking}</div>
+                    <div id="overviewBooking" style="font-size: 1.5rem; font-weight: 700; color: #60a5fa;">${countBooking}</div>
+                </div>
+                <div id="cardOverviewAirbnb" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid #ff385c; ${countAirbnb === 0 ? 'display: none;' : ''}">
+                    <h5 style="color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.75rem;">Airbnb</h5>
+                    <div id="overviewAirbnb" style="font-size: 1.5rem; font-weight: 700; color: #ff385c;">${countAirbnb}</div>
                 </div>
             </div>
 
@@ -131,6 +136,7 @@ export async function renderReservas(container, session) {
                                 <div class="custom-option" data-value="pendente">Pendente</div>
                                 <div class="custom-option" data-value="confirmada">Confirmada</div>
                                 <div class="custom-option" data-value="booking">Booking</div>
+                                <div class="custom-option" data-value="airbnb">Airbnb</div>
                             </div>
                         </div>
                     </div>
@@ -263,6 +269,7 @@ export async function renderReservas(container, session) {
 
     const getStatusBadge = (status) => {
         if (status === 'booking') return '<span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>';
+        if (status === 'airbnb') return '<span class="badge" style="background: rgba(255, 56, 92, 0.2); color: #ff385c; border: 1px solid rgba(255, 56, 92, 0.5);"><i class="fa-brands fa-airbnb"></i> Airbnb</span>';
         if (status === 'confirmada') return '<span class="badge badge-success">Confirmada</span>';
         if (status === 'rejeitada' || status === 'cancelada') return '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Rejeitada</span>';
         return '<span class="badge badge-warning">Pendente</span>';
@@ -280,6 +287,20 @@ export async function renderReservas(container, session) {
                         <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio, true)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim, true)}</td>
                         <td><span class="text-sub">--</span></td>
                         <td>${getStatusBadge('booking')}</td>
+                        <td style="text-align: right;"><span class="text-sub">--</span></td>
+                    </tr>
+                `;
+                return;
+            }
+
+            if (res.isAirbnb) {
+                html += `
+                    <tr class="reserva-row" data-cliente="airbnb" data-recurso="${escapeHTML(recursoNome)}" data-estado="airbnb" data-inicio="${res.data_hora_inicio}" style="background: rgba(255, 56, 92, 0.04);">
+                        <td><strong>${escapeHTML(recursoNome)}</strong></td>
+                        <td><span class="text-sub">--</span></td>
+                        <td style="font-size: 0.85rem;">${formataDataHora(res.data_hora_inicio, true)}<br><span style="color: var(--text-secondary);">até</span> ${formataDataHora(res.data_hora_fim, true)}</td>
+                        <td><span class="text-sub">--</span></td>
+                        <td>${getStatusBadge('airbnb')}</td>
                         <td style="text-align: right;"><span class="text-sub">--</span></td>
                     </tr>
                 `;
@@ -391,7 +412,25 @@ export async function renderReservas(container, session) {
                 borderColor: 'transparent',
                 extendedProps: {
                     isBooking: true,
+                    isAirbnb: false,
                     status: 'Booking',
+                    recursoNome: recNome
+                }
+            };
+        }
+        if (item.isAirbnb) {
+            const recNome = item.recursos ? item.recursos.nome : 'Recurso Removido';
+            return {
+                id: 'airbnb-' + item.id,
+                title: `[Airbnb] ${recNome}`,
+                start: item.data_hora_inicio,
+                end: item.data_hora_fim,
+                backgroundColor: '#ff385c',
+                borderColor: 'transparent',
+                extendedProps: {
+                    isBooking: false,
+                    isAirbnb: true,
+                    status: 'Airbnb',
                     recursoNome: recNome
                 }
             };
@@ -408,6 +447,7 @@ export async function renderReservas(container, session) {
             borderColor: 'transparent',
             extendedProps: {
                 isBooking: false,
+                isAirbnb: false,
                 status: item.status,
                 email: item.cliente_email,
                 telemovel: item.cliente_telemovel,
@@ -491,6 +531,35 @@ export async function renderReservas(container, session) {
                             </ul>
                         `;
                         window.showInfoModal('Reserva Booking.com', htmlBooking);
+                        return;
+                    }
+
+                    if (info.event.extendedProps.isAirbnb) {
+                        const formataDataApenas = (d) => {
+                            if (!d) return '';
+                            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        };
+                        const htmlAirbnb = `
+                            <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 0.9rem;">
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-solid fa-cube" style="color: #ff385c; width: 25px;"></i> 
+                                    <strong>Recurso:</strong> ${escapeHTML(info.event.extendedProps.recursoNome)}
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-brands fa-airbnb" style="color: #ff385c; width: 25px;"></i> 
+                                    <strong>Estado:</strong> <span class="badge" style="background: rgba(255, 56, 92, 0.2); color: #ff385c; border: 1px solid rgba(255, 56, 92, 0.5);"><i class="fa-brands fa-airbnb"></i> Airbnb</span>
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <i class="fa-regular fa-calendar-check" style="color: #ff385c; width: 25px;"></i> 
+                                    <strong>Check-in:</strong> ${formataDataApenas(info.event.start)}
+                                </li>
+                                <li style="margin-bottom: 0.5rem; padding-bottom: 0.5rem;">
+                                    <i class="fa-regular fa-calendar-times" style="color: #ff385c; width: 25px;"></i> 
+                                    <strong>Check-out:</strong> ${info.event.end ? formataDataApenas(info.event.end) : formataDataApenas(info.event.start)}
+                                </li>
+                            </ul>
+                        `;
+                        window.showInfoModal('Reserva Airbnb', htmlAirbnb);
                         return;
                     }
 
@@ -801,6 +870,7 @@ export async function renderReservas(container, session) {
         let currentCountPendentes = 0;
         let currentCountConfirmadas = 0;
         let currentCountBooking = 0;
+        let currentCountAirbnb = 0;
 
         // Filter Table Rows
         document.querySelectorAll('#viewListContainer tbody tr.reserva-row').forEach(tr => {
@@ -829,13 +899,14 @@ export async function renderReservas(container, session) {
                 if (estado === 'pendente') currentCountPendentes++;
                 if (estado === 'confirmada') currentCountConfirmadas++;
                 if (estado === 'booking') currentCountBooking++;
+                if (estado === 'airbnb') currentCountAirbnb++;
             }
         });
 
         // Filter Calendar
         if (calendar) {
             const filteredEvents = todosRegistos.filter(r => {
-                const cliente = r.isBooking ? 'booking' : (((r.cliente_nome || '') + ' ' + (r.cliente_email || '') + ' ' + (r.cliente_telemovel || '')).toLowerCase());
+                const cliente = r.isBooking ? 'booking' : (r.isAirbnb ? 'airbnb' : (((r.cliente_nome || '') + ' ' + (r.cliente_email || '') + ' ' + (r.cliente_telemovel || '')).toLowerCase()));
                 const recurso = r.recursos ? r.recursos.nome.toLowerCase() : '';
                 const estado = (r.status || '').toLowerCase();
                 const reservaInicioTime = new Date(r.data_hora_inicio).getTime();
@@ -868,6 +939,12 @@ export async function renderReservas(container, session) {
         const cardBookingEl = document.getElementById('cardOverviewBooking');
         if (cardBookingEl) {
             cardBookingEl.style.display = currentCountBooking > 0 ? '' : 'none';
+        }
+        const ovAirbnbEl = document.getElementById('overviewAirbnb');
+        if (ovAirbnbEl) ovAirbnbEl.textContent = currentCountAirbnb;
+        const cardAirbnbEl = document.getElementById('cardOverviewAirbnb');
+        if (cardAirbnbEl) {
+            cardAirbnbEl.style.display = currentCountAirbnb > 0 ? '' : 'none';
         }
     };
 

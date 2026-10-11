@@ -1,4 +1,4 @@
-﻿import { syncRecursoBooking } from '../services/ical-service.js';
+import { syncRecursoBooking, syncRecursoAirbnb } from '../services/ical-service.js';
 
 export async function renderBloqueios(container, session) {
     const empId = window.dashboardContext.currentEmpresaId;
@@ -25,7 +25,7 @@ export async function renderBloqueios(container, session) {
     // Load Active Resources
     const { data: meusRecursos } = await window.supabase
         .from('recursos')
-        .select('id, nome, empresa_id')
+        .select('id, nome, empresa_id, ical_import_url, ical_airbnb_url')
         .eq('empresa_id', empId)
         .eq('ativo', true);
 
@@ -98,8 +98,8 @@ export async function renderBloqueios(container, session) {
             <!-- SECTION 1: BLOQUEIOS DE PERIODO -->
             <div id="sectionPeriodo">
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;">
-                    <button class="btn btn-secondary" id="btnSyncBookingBloqueios" style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #60a5fa; border-color: rgba(96,165,250,0.3);">
-                        <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Booking
+                    <button class="btn btn-secondary" id="btnSyncBookingBloqueios" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Sincronizar
                     </button>
                     <button class="btn btn-primary" id="btnNovoBloqueio" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Inserir Bloqueio Único</button>
                 </div>
@@ -186,18 +186,26 @@ export async function renderBloqueios(container, session) {
             };
 
             const isBooking = bloq.origem === 'booking';
-            const origemBadge = isBooking
-                ? `<span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>`
-                : `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);">Manual</span>`;
+            const isAirbnb = bloq.origem === 'airbnb';
+            const isExterno = isBooking || isAirbnb;
+
+            let origemBadge;
+            if (isBooking) {
+                origemBadge = `<span class="badge" style="background: rgba(0, 53, 128, 0.25); color: #60a5fa; border: 1px solid rgba(0, 53, 128, 0.5);"><i class="fa-solid fa-hotel"></i> Booking</span>`;
+            } else if (isAirbnb) {
+                origemBadge = `<span class="badge" style="background: rgba(255, 56, 92, 0.2); color: #ff385c; border: 1px solid rgba(255, 56, 92, 0.5);"><i class="fa-brands fa-airbnb"></i> Airbnb</span>`;
+            } else {
+                origemBadge = `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);">Manual</span>`;
+            }
 
             html += `
                 <tr class="bloqueio-row" data-recurso="${escapeHTML(recursoNome)}">
                     <td><strong>${escapeHTML(recursoNome)}</strong></td>
-                    <td>${formataDataHora(bloq.data_hora_inicio, isBooking)}</td>
-                    <td>${formataDataHora(bloq.data_hora_fim, isBooking)}</td>
+                    <td>${formataDataHora(bloq.data_hora_inicio, isExterno)}</td>
+                    <td>${formataDataHora(bloq.data_hora_fim, isExterno)}</td>
                     <td>${origemBadge}</td>
                     <td style="text-align: right;">
-                        ${!isBooking ? `
+                        ${!isExterno ? `
                             <button class="btn btn-secondary btn-edit-bloqueio" data-id="${bloq.id}" data-empresa="${bloq.empresa_id}" data-recurso="${bloq.recurso_id}" data-inicio="${formatForInput(inicioISO)}" data-fim="${formatForInput(fimISO)}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto;" title="Editar"><i class="fa-solid fa-pen"></i></button>
                         ` : ''}
                         <button class="btn btn-secondary btn-delete-bloqueio" data-id="${bloq.id}" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; min-width: auto; color: var(--danger);" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
@@ -341,32 +349,48 @@ export async function renderBloqueios(container, session) {
 }
 
 function setupBloqueiosListeners(meusRecursos) {
-    // --- Sincronizar Booking ---
-    const btnSyncBooking = document.getElementById('btnSyncBookingBloqueios');
-    if (btnSyncBooking) {
-        btnSyncBooking.addEventListener('click', async () => {
-            const icon = btnSyncBooking.querySelector('i');
-            icon.className = 'fa-solid fa-spinner fa-spin';
-            btnSyncBooking.disabled = true;
+    // --- Sincronizar Booking e Airbnb ---
+    const btnSyncBloqueios = document.getElementById('btnSyncBookingBloqueios');
+    if (btnSyncBloqueios) {
+        btnSyncBloqueios.addEventListener('click', async () => {
+            const icon = btnSyncBloqueios.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+            btnSyncBloqueios.disabled = true;
 
-            let totalEvents = 0;
-            let countSynced = 0;
+            let totalBookingEvents = 0;
+            let totalAirbnbEvents = 0;
+            let hasSyncConfigured = false;
 
             for (const rec of (meusRecursos || [])) {
-                try {
-                    const res = await syncRecursoBooking(rec.id);
-                    countSynced++;
-                    totalEvents += (res.eventsCount !== undefined ? res.eventsCount : (res.report?.[0]?.eventsFound || 0));
-                } catch (e) {
-                    // Ignora silenciosamente recursos sem iCal configurado
+                if (rec.ical_import_url) {
+                    hasSyncConfigured = true;
+                    try {
+                        const res = await syncRecursoBooking(rec.id);
+                        totalBookingEvents += (res.eventsCount !== undefined ? res.eventsCount : (res.report?.[0]?.eventsFound || 0));
+                    } catch (e) {
+                        console.warn(`Erro a sincronizar Booking para ${rec.nome}:`, e);
+                    }
+                }
+                if (rec.ical_airbnb_url) {
+                    hasSyncConfigured = true;
+                    try {
+                        const res = await syncRecursoAirbnb(rec.id);
+                        totalAirbnbEvents += (res.eventsCount !== undefined ? res.eventsCount : (res.report?.[0]?.eventsFound || 0));
+                    } catch (e) {
+                        console.warn(`Erro a sincronizar Airbnb para ${rec.nome}:`, e);
+                    }
                 }
             }
 
-            icon.className = 'fa-solid fa-arrows-rotate';
-            btnSyncBooking.disabled = false;
+            if (icon) icon.className = 'fa-solid fa-arrows-rotate';
+            btnSyncBloqueios.disabled = false;
 
-            window.showAlertModal('Sincronização com o Booking', `Sincronização concluída! ${totalEvents} bloqueios atualizados do Booking.`);
-            setTimeout(() => document.querySelector('[data-view="bloqueios"]').click(), 1000);
+            if (!hasSyncConfigured) {
+                window.showAlertModal('Sincronização', 'Nenhum recurso possui links do Booking ou Airbnb configurados em "Recursos".');
+            } else {
+                window.showAlertModal('Sincronização Concluída', `Sincronização realizada com sucesso!<br><br>• Booking: <strong>${totalBookingEvents}</strong> períodos atualizados<br>• Airbnb: <strong>${totalAirbnbEvents}</strong> períodos atualizados`);
+                setTimeout(() => document.querySelector('[data-view="bloqueios"]').click(), 1200);
+            }
         });
     }
 
